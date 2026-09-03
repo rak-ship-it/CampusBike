@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Student Login · CampusBike{% endblock %}
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <div class="eyebrow">STUDENT PORTAL</div>
+        <h1>Sign in to <span>CampusBike.</span></h1>
+        <p class="lead">Use your verified Google account. If your college email is hosted on Google Workspace, use that college account here.</p>
+
+        {% if allowed_domains %}
+            <div class="notice">Approved email domain{% if allowed_domains|length > 1 %}s{% endif %}: {{ allowed_domains|join(', ') }}</div>
+        {% endif %}
+
+        {% if google_ready %}
+            <a class="google-button" href="{{ url_for('google_login') }}">Continue with Google</a>
+        {% else %}
+            <div class="notice warning">
+                Google login is built into the app, but the OAuth credentials are not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to your .env file.
+            </div>
+        {% endif %}
+
+        <p class="tiny">Admin? <a href="{{ url_for('admin_login') }}">Open admin login</a></p>
+    </div>
+</section>
+{% endblock %}

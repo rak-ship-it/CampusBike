@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}My CampusBike{% endblock %}
+{% block content %}
+<section class="hero compact">
+    <div class="eyebrow">STUDENT DASHBOARD</div>
+    <h1>Hello, <span>{{ student['name'] }}</span></h1>
+    <p class="lead">Choose a station first, then choose an available bike.</p>
+</section>
+
+{% if active_ride %}
+<section class="active-ride-card">
+    <div>
+        <div class="eyebrow light">ACTIVE RIDE</div>
+        <h2>🚲 {{ active_ride['bike_id'] }}</h2>
+        <p>Started {{ active_ride['rented_at'] }}{% if active_ride['start_station'] %} from {{ active_ride['start_station'] }}{% endif %}</p>
+    </div>
+    <a class="danger-button" href="{{ url_for('return_ride', ride_id=active_ride['ride_id']) }}">End ride</a>
+</section>
+{% endif %}
+
+<section class="student-metrics">
+    <div class="metric"><strong>{{ completed_count }}</strong><span>Your completed rides</span></div>
+    <div class="metric"><strong>{{ 1 if active_ride else 0 }}</strong><span>Your active rides</span></div>
+</section>
+
+<section class="section">
+    <div class="section-heading">
+        <div>
+            <div class="eyebrow">STEP 1</div>
+            <h2>Select a station</h2>
+        </div>
+    </div>
+    <div class="station-grid">
+        {% for station in stations %}
+        <a class="station-card" href="{{ url_for('station_view', station_name=station['station_name']) }}">
+            <div class="station-top"><span>📍</span><strong>{{ station['station_name'] }}</strong></div>
+            <div class="station-count">{{ station['available_bikes'] }}</div>
+            <div class="station-label">bike{% if station['available_bikes'] != 1 %}s{% endif %} available</div>
+            <div class="station-slots">{{ station['available_slots'] }} return slots free</div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-heading">
+        <div>
+            <div class="eyebrow">MY ACTIVITY</div>
+            <h2>Recent rides</h2>
+        </div>
+    </div>
+    {% if recent_rides %}
+    <div class="ride-list">
+        {% for ride in recent_rides %}
+        <div class="ride-row">
+            <div><strong>#{{ ride['ride_id'] }} · {{ ride['bike_id'] }}</strong><span>{{ ride['rented_at'] }}</span></div>
+            <div>
+                {% if ride['returned_at'] %}
+                    <span class="badge success">Completed</span>
+                {% else %}
+                    <span class="badge active">Active</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <div class="empty-card">No rides yet.</div>
+    {% endif %}
+</section>
+{% endblock %}

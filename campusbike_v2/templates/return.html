@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}End ride · CampusBike{% endblock %}
+{% block content %}
+<section class="hero compact">
+    <div class="eyebrow">END RIDE</div>
+    <h1>Return <span>{{ ride['bike_id'] }}</span></h1>
+    <p class="lead">Choose the station where you are physically parking the bike. CampusBike assigns the first free slot automatically.</p>
+</section>
+
+<div class="station-grid return-grid">
+{% for station in stations %}
+    <div class="station-card static">
+        <div class="station-top"><span>📍</span><strong>{{ station['station_name'] }}</strong></div>
+        <div class="station-count">{{ station['available_slots'] }}</div>
+        <div class="station-label">return slots free</div>
+        <form method="post" action="{{ url_for('return_ride', ride_id=ride['ride_id']) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="station_name" value="{{ station['station_name'] }}">
+            <button class="primary-button full" type="submit" {% if station['available_slots'] == 0 %}disabled{% endif %}>
+                {% if station['available_slots'] == 0 %}Station full{% else %}Park here{% endif %}
+            </button>
+        </form>
+    </div>
+{% endfor %}
+</div>
+{% endblock %}

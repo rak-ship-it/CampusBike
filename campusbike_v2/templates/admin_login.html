@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Admin Login · CampusBike{% endblock %}
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <div class="eyebrow">ADMIN PORTAL</div>
+        <h1>Admin <span>Login.</span></h1>
+        {% if error %}<div class="notice warning">{{ error }}</div>{% endif %}
+        <form class="form-stack" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>Username<input type="text" name="username" required autocomplete="username"></label>
+            <label>Password<input type="password" name="password" required autocomplete="current-password"></label>
+            <button class="primary-button full" type="submit">Open dashboard</button>
+        </form>
+        <p class="tiny">Student? <a href="{{ url_for('student_login') }}">Student login</a></p>
+    </div>
+</section>
+{% endblock %}

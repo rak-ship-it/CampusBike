@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ station['station_name'] }} · CampusBike{% endblock %}
+{% block content %}
+<section class="hero compact">
+    <div class="eyebrow">STEP 2 · CHOOSE A BIKE</div>
+    <h1>📍 <span>{{ station['station_name'] }}</span></h1>
+    <p class="lead">Select the bike you are standing near. Renting will require a QR scan.</p>
+</section>
+
+<a class="back-link" href="{{ url_for('dashboard') }}">← Change station</a>
+
+{% if active_ride %}
+<div class="notice warning">You already have an active ride on {{ active_ride['bike_id'] }}. Finish it before renting another bike.</div>
+{% endif %}
+
+<div class="bike-grid">
+    {% for bike in bikes %}
+    <div class="bike-card">
+        <div class="bike-icon">🚲</div>
+        <h3>{{ bike['bike_id'] }}</h3>
+        <span class="badge success">Available</span>
+        <div class="bike-meta"><span>Slot</span><strong>{{ bike['slot'] or '—' }}</strong></div>
+        <div class="bike-meta"><span>Lock</span><strong>{{ bike['lock_status'] or '—' }}</strong></div>
+        <a class="primary-button {% if active_ride %}disabled{% endif %}" href="{% if active_ride %}#{% else %}{{ url_for('bike_view', bike_id=bike['bike_id']) }}{% endif %}">Select bike</a>
+    </div>
+    {% else %}
+    <div class="empty-card">No bikes are currently available at this station.</div>
+    {% endfor %}
+</div>
+{% endblock %}

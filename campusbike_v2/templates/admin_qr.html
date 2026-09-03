@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Bike QR Labels · CampusBike{% endblock %}
+{% block content %}
+<section class="hero compact">
+    <div class="eyebrow">ADMIN · QR LABELS</div>
+    <h1>Print bike <span>QR labels.</span></h1>
+    <p class="lead">Each QR is unique to one bike. Students scan it through the CampusBike camera flow.</p>
+    <div class="admin-actions"><button class="primary-button" onclick="window.print()">Print labels</button><a class="secondary-button" href="{{ url_for('admin_dashboard') }}">Back</a></div>
+</section>
+<div class="qr-grid">
+{% for bike in bikes %}
+    <div class="qr-label">
+        <img
+            src="{{ url_for('admin_qr_png', bike_id=bike['bike_id'], v=qr_version) }}"
+            alt="Official CampusBike QR for {{ bike['bike_id'] }}"
+        >
+        <strong>{{ bike['bike_id'] }}</strong>
+        <span>CampusBike</span>
+    </div>
+{% endfor %}
+</div>
+{% endblock %}

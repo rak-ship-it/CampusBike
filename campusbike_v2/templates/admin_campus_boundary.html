@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block title %}
+Campus Service Area · CampusBike
+{% endblock %}
+
+
+{% block content %}
+
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+>
+
+
+<style>
+
+    .boundary-page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 22px;
+    }
+
+    .boundary-head {
+        margin-bottom: 18px;
+    }
+
+    .boundary-eyebrow {
+        color: #E63946;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 1px;
+    }
+
+    .boundary-title {
+        margin: 6px 0 4px;
+        color: #171717;
+        font-size: 27px;
+        font-weight: 900;
+    }
+
+    .boundary-note {
+        color: #77736D;
+        font-size: 12px;
+        line-height: 18px;
+    }
+
+    .boundary-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin: 16px 0;
+    }
+
+    .boundary-button {
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .boundary-button-dark {
+        background: #171717;
+        color: #FFFFFF;
+    }
+
+    .boundary-button-light {
+        background: #FFFFFF;
+        color: #171717;
+        border: 1px solid #DDD8D1;
+    }
+
+    .boundary-button-red {
+        background: #E63946;
+        color: #FFFFFF;
+    }
+
+    #campus-boundary-map {
+        width: 100%;
+        height: 560px;
+        border-radius: 18px;
+        border: 1px solid #DDD8D1;
+        overflow: hidden;
+    }
+
+    .boundary-status {
+        margin-top: 12px;
+        padding: 12px 14px;
+        background: #FFFFFF;
+        border: 1px solid #E5E1DA;
+        border-radius: 12px;
+        color: #615D58;
+        font-size: 11px;
+    }
+
+    .boundary-tip {
+        margin-top: 9px;
+        color: #77736D;
+        font-size: 10px;
+        line-height: 16px;
+    }
+
+</style>
+
+
+<div class="boundary-page">
+
+
+    <div class="boundary-head">
+
+        <div class="boundary-eyebrow">
+            CAMPUSBIKE · SERVICE AREA
+        </div>
+
+        <h1 class="boundary-title">
+            {{ campus.campus_name }}
+        </h1>
+
+        <div class="boundary-note">
+            Click around the outside edge of the campus
+            to create the CampusBike service area.
+        </div>
+
+    </div>
+
+
+    <div class="boundary-toolbar">
+
+        <button
+            type="button"
+            class="boundary-button boundary-button-dark"
+            onclick="useMyLocation()"
+        >
+            My location
+        </button>
+
+
+        <button
+            type="button"
+            class="boundary-button boundary-button-light"
+            onclick="undoPoint()"
+        >
+            Undo point
+        </button>
+
+
+        <button
+            type="button"
+            class="boundary-button boundary-button-light"
+            onclick="clearBoundary()"
+        >
+            Clear
+        </button>
+
+
+        <a
+            class="boundary-button boundary-button-light"
+            href="{{ url_for('admin_dashboard') }}#stations"
+            style="text-decoration:none;"
+        >
+            Back to Admin
+        </a>
+
+    </div>
+
+
+    <div id="campus-boundary-map"></div>
+
+
+    <div
+        class="boundary-status"
+        id="boundary-status"
+    >
+        0 boundary points
+    </div>
+
+
+    <div class="boundary-tip">
+        Click points in order around the outside edge.
+        You can drag an existing point if you need to
+        correct its position. A minimum of 3 points is required.
+    </div>
+
+
+    <form
+        method="POST"
+        id="boundary-form"
+        style="margin-top:16px;"
+    >
+
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="{{ csrf_token() }}"
+        >
+
+        <input
+            type="hidden"
+            name="boundary_json"
+            id="boundary-json"
+        >
+
+
+        <button
+            type="submit"
+            class="boundary-button boundary-button-red"
+        >
+            Save service area
+        </button>
+
+    </form>
+
+
+</div>
+
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+></script>
+
+
+<script>
+
+const initialBoundary =
+    {{ boundary_points | tojson }};
+
+const mapCenter =
+    {{ map_center | tojson }};
+
+
+const map = L.map(
+    'campus-boundary-map'
+).setView(
+    [
+        mapCenter.latitude,
+        mapCenter.longitude
+    ],
+    17
+);
+
+
+L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+        maxZoom: 20,
+        attribution:
+            '&copy; OpenStreetMap contributors'
+    }
+).addTo(map);
+
+
+let points =
+    initialBoundary.map(
+        point => ({
+            latitude:
+                Number(point.latitude),
+
+            longitude:
+                Number(point.longitude)
+        })
+    );
+
+
+let markers = [];
+
+let polygon = null;
+
+
+function updateHiddenField() {
+
+    document.getElementById(
+        'boundary-json'
+    ).value =
+        JSON.stringify(points);
+
+
+    document.getElementById(
+        'boundary-status'
+    ).textContent =
+        `${points.length} boundary point${
+            points.length === 1
+                ? ''
+                : 's'
+        }`;
+
+}
+
+
+function renderBoundary(
+    fitMap = false
+) {
+
+    markers.forEach(
+        marker =>
+            map.removeLayer(marker)
+    );
+
+
+    markers = [];
+
+
+    if (polygon) {
+
+        map.removeLayer(
+            polygon
+        );
+
+        polygon = null;
+
+    }
+
+
+    points.forEach(
+        (point, index) => {
+
+            const marker =
+                L.marker(
+                    [
+                        point.latitude,
+                        point.longitude
+                    ],
+                    {
+                        draggable: true
+                    }
+                ).addTo(map);
+
+
+            marker.bindTooltip(
+                `Point ${index + 1}`,
+                {
+                    permanent: true,
+                    direction: 'top'
+                }
+            );
+
+
+            marker.on(
+                'dragend',
+                event => {
+
+                    const position =
+                        event.target
+                            .getLatLng();
+
+
+                    points[index] = {
+                        latitude:
+                            position.lat,
+
+                        longitude:
+                            position.lng
+                    };
+
+
+                    renderBoundary(
+                        false
+                    );
+
+                }
+            );
+
+
+            markers.push(
+                marker
+            );
+
+        }
+    );
+
+
+    if (
+        points.length >= 3
+    ) {
+
+        polygon =
+            L.polygon(
+                points.map(
+                    point => [
+                        point.latitude,
+                        point.longitude
+                    ]
+                ),
+                {
+                    color: '#E63946',
+                    weight: 3,
+                    fillColor: '#E63946',
+                    fillOpacity: 0.12
+                }
+            ).addTo(map);
+
+    }
+
+
+    updateHiddenField();
+
+
+    if (
+        fitMap &&
+        points.length >= 2
+    ) {
+
+        const bounds =
+            L.latLngBounds(
+                points.map(
+                    point => [
+                        point.latitude,
+                        point.longitude
+                    ]
+                )
+            );
+
+
+        map.fitBounds(
+            bounds,
+            {
+                padding: [30, 30]
+            }
+        );
+
+    }
+
+}
+
+
+map.on(
+    'click',
+    event => {
+
+        points.push({
+            latitude:
+                event.latlng.lat,
+
+            longitude:
+                event.latlng.lng
+        });
+
+
+        renderBoundary(
+            false
+        );
+
+    }
+);
+
+
+function undoPoint() {
+
+    if (
+        points.length === 0
+    ) {
+        return;
+    }
+
+
+    points.pop();
+
+    renderBoundary(
+        false
+    );
+
+}
+
+
+function clearBoundary() {
+
+    if (
+        points.length === 0
+    ) {
+        return;
+    }
+
+
+    if (
+        !window.confirm(
+            'Clear all campus boundary points?'
+        )
+    ) {
+        return;
+    }
+
+
+    points = [];
+
+    renderBoundary(
+        false
+    );
+
+}
+
+
+function useMyLocation() {
+
+    if (
+        !navigator.geolocation
+    ) {
+
+        alert(
+            'Location is not available in this browser.'
+        );
+
+        return;
+
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        position => {
+
+            map.setView(
+                [
+                    position.coords.latitude,
+                    position.coords.longitude
+                ],
+                18
+            );
+
+        },
+
+        () => {
+
+            alert(
+                'Could not get your current location.'
+            );
+
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 10000
+        }
+
+    );
+
+}
+
+
+document
+    .getElementById(
+        'boundary-form'
+    )
+    .addEventListener(
+        'submit',
+        event => {
+
+            if (
+                points.length < 3
+            ) {
+
+                event.preventDefault();
+
+                alert(
+                    'Add at least 3 boundary points.'
+                );
+
+                return;
+
+            }
+
+
+            updateHiddenField();
+
+        }
+    );
+
+
+renderBoundary(
+    initialBoundary.length >= 3
+);
+
+</script>
+
+
+{% endblock %}

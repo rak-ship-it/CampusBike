@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Scan {{ bike['bike_id'] }} · CampusBike{% endblock %}
+{% block head %}
+<script src="https://unpkg.com/@zxing/browser@0.2.1/umd/zxing-browser.min.js"></script>
+{% endblock %}
+{% block content %}
+<section class="hero compact">
+    <div class="eyebrow">STEP 4 · QR VERIFICATION</div>
+    <h1>Scan <span>{{ bike['bike_id'] }}</span></h1>
+    <p class="lead">Point the rear camera at the CampusBike QR sticker on the selected bike.</p>
+</section>
+
+<div class="scanner-card">
+    <video id="scanner-video" playsinline muted></video>
+    <div class="scan-frame"></div>
+    <div id="scanner-status" class="scanner-status">Requesting camera permission…</div>
+</div>
+
+<div class="scanner-actions">
+    <button id="retry-camera" class="secondary-button" type="button" hidden>Try camera again</button>
+    <a class="secondary-button" href="{{ url_for('bike_view', bike_id=bike['bike_id']) }}">Cancel</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const selectedBike = {{ bike['bike_id']|tojson }};
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+const statusBox = document.getElementById('scanner-status');
+const retryButton = document.getElementById('retry-camera');
+const video = document.getElementById('scanner-video');
+let controls = null;
+let busy = false;
+
+async function verifyScan(text) {
+    statusBox.textContent = 'QR detected. Verifying bike…';
+    const response = await fetch({{ url_for('verify_and_rent')|tojson }}, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ bike_id: selectedBike, qr_text: text })
+    });
+    const data = await response.json();
+    if (data.ok) {
+        statusBox.textContent = 'Verified. Starting your ride…';
+        window.location.href = data.redirect;
+        return;
+    }
+    busy = false;
+    statusBox.textContent = data.message || 'QR verification failed.';
+    if (controls) {
+        try { controls.stop(); } catch (_) {}
+    }
+    setTimeout(startScanner, 900);
+}
+
+async function startScanner() {
+    retryButton.hidden = true;
+    statusBox.textContent = 'Opening rear camera…';
+    busy = false;
+
+    try {
+        const reader = new ZXingBrowser.BrowserQRCodeReader();
+        controls = await reader.decodeFromVideoDevice(undefined, video, (result, error, scannerControls) => {
+            if (result && !busy) {
+                busy = true;
+                try { scannerControls.stop(); } catch (_) {}
+                verifyScan(result.getText());
+            }
+        });
+        statusBox.textContent = 'Camera ready. Scan the QR on ' + selectedBike + '.';
+    } catch (error) {
+        statusBox.textContent = 'Camera could not start. Allow camera access in your browser and try again.';
+        retryButton.hidden = false;
+    }
+}
+
+retryButton.addEventListener('click', startScanner);
+window.addEventListener('beforeunload', () => {
+    if (controls) {
+        try { controls.stop(); } catch (_) {}
+    }
+});
+window.addEventListener('load', startScanner);
+</script>
+{% endblock %}

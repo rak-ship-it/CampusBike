@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Databases / local runtime data
+*.db
+*.sqlite
+*.sqlite3
+
+# Backups / archives
+*.zip
+*.bak
+*backup*
+
+# Expo / React Native
+node_modules/
+.expo/
+dist/
+web-build/
+
+# OS / editor
+.DS_Store
+.vscode/
+
+# Runtime files
+*.log
+*_QR.png
+
+# Local AI/editor settings
+.claude/

@@ -1,0 +1,3436 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CampusBike Admin</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+            margin: 0;
+            font-family:
+                Inter,
+                Arial,
+                sans-serif;
+            background: #f6f5f2;
+            color: #171717;
+        }
+
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+
+        button {
+            font: inherit;
+        }
+
+
+        /* ============================================= */
+        /* HEADER */
+        /* ============================================= */
+
+        .topbar {
+            background: #151515;
+            color: white;
+            padding: 18px 26px;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+
+        .brand-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+
+            border-radius: 12px;
+
+            background: #e63946;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 20px;
+        }
+
+
+        .brand-name {
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+
+        .brand-subtitle {
+            margin-top: 2px;
+
+            color: #aaa;
+            font-size: 11px;
+        }
+
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+
+        .top-link {
+            padding: 9px 13px;
+
+            border-radius: 9px;
+
+            border: 1px solid #353535;
+
+            color: #ddd;
+
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+
+        .top-link:hover {
+            border-color: #666;
+        }
+
+
+        .logout {
+            color: #ffb8be;
+        }
+
+
+        /* ============================================= */
+        /* LAYOUT */
+        /* ============================================= */
+
+        .layout {
+            display: flex;
+            min-height: calc(100vh - 76px);
+        }
+
+
+        .sidebar {
+            width: 220px;
+
+            background: #ffffff;
+
+            border-right: 1px solid #e4e1dc;
+
+            padding: 24px 14px;
+
+            position: sticky;
+
+            top: 76px;
+
+            height: calc(100vh - 76px);
+        }
+
+
+        .nav-title {
+            padding: 0 10px 10px;
+
+            font-size: 9px;
+            letter-spacing: 1.3px;
+            font-weight: 900;
+
+            color: #a09c96;
+        }
+
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            padding: 11px 12px;
+
+            margin-bottom: 4px;
+
+            border-radius: 10px;
+
+            color: #55514d;
+
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+
+        .nav-link:hover {
+            background: #f6f5f2;
+            color: #151515;
+        }
+
+
+        .nav-link.active {
+            background: #fff0f1;
+            color: #d62e3b;
+            font-weight: 900;
+        }
+
+
+        .nav-link.active:hover {
+            background: #fff0f1;
+            color: #d62e3b;
+        }
+
+
+        .content {
+            flex: 1;
+
+            padding: 30px;
+
+            max-width: 1500px;
+
+            overflow: hidden;
+        }
+
+
+        /* ============================================= */
+        /* PAGE TITLE */
+        /* ============================================= */
+
+        .page-kicker {
+            color: #e63946;
+
+            font-size: 9px;
+            font-weight: 900;
+
+            letter-spacing: 1.7px;
+        }
+
+
+        .page-title {
+            margin: 5px 0 0;
+
+            font-size: 30px;
+            font-weight: 850;
+
+            letter-spacing: -0.8px;
+        }
+
+
+        .page-subtitle {
+            margin-top: 6px;
+
+            color: #827d76;
+
+            font-size: 12px;
+        }
+
+
+        /* ============================================= */
+        /* FLASH */
+        /* ============================================= */
+
+        .flash {
+            margin-top: 18px;
+
+            padding: 13px 15px;
+
+            border-radius: 12px;
+
+            border: 1px solid #ddd;
+
+            font-size: 12px;
+            font-weight: 700;
+
+            background: white;
+        }
+
+
+        .flash.success {
+            background: #eef8f1;
+            border-color: #bedec7;
+            color: #27633a;
+        }
+
+
+        .flash.error {
+            background: #fff1f2;
+            border-color: #efc2c6;
+            color: #9f2430;
+        }
+
+
+        /* ============================================= */
+        /* STATS */
+        /* ============================================= */
+
+        .stats-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(6, minmax(130px, 1fr));
+
+            gap: 12px;
+
+            margin-top: 24px;
+        }
+
+
+        .stat-card {
+            background: white;
+
+            border: 1px solid #e2dfda;
+
+            border-radius: 15px;
+
+            padding: 16px;
+        }
+
+
+        .stat-label {
+            color: #88837c;
+
+            font-size: 9px;
+            font-weight: 800;
+
+            letter-spacing: 0.5px;
+        }
+
+
+        .stat-number {
+            margin-top: 7px;
+
+            font-size: 25px;
+            font-weight: 850;
+        }
+
+
+        .stat-number.red {
+            color: #e63946;
+        }
+
+
+        /* ============================================= */
+        /* SECTION */
+        /* ============================================= */
+
+        .section {
+            margin-top: 28px;
+        }
+
+
+        .section-head {
+            margin-bottom: 12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 12px;
+        }
+
+
+        .section-title-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+
+        .section-icon {
+            width: 34px;
+            height: 34px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: #fff0f1;
+
+            border-radius: 10px;
+
+            font-size: 17px;
+        }
+
+
+        .section-title {
+            margin: 0;
+
+            font-size: 17px;
+            font-weight: 850;
+        }
+
+
+        .section-note {
+            margin-top: 3px;
+
+            font-size: 10px;
+            color: #89847e;
+        }
+
+
+        .count-pill {
+            border-radius: 999px;
+
+            background: #fff0f1;
+            color: #d52e3a;
+
+            padding: 6px 10px;
+
+            font-size: 10px;
+            font-weight: 850;
+        }
+
+
+        /* ============================================= */
+        /* MAINTENANCE */
+        /* ============================================= */
+
+        .maintenance-list {
+            display: grid;
+            gap: 10px;
+        }
+
+
+        .report-card {
+            background: white;
+
+            border: 1px solid #e2dfda;
+
+            border-radius: 16px;
+
+            padding: 17px;
+        }
+
+
+        .report-top {
+            display: flex;
+
+            justify-content: space-between;
+
+            gap: 15px;
+        }
+
+
+        .report-bike-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+
+        .bike-badge {
+            padding: 6px 9px;
+
+            background: #171717;
+            color: white;
+
+            border-radius: 8px;
+
+            font-size: 11px;
+            font-weight: 850;
+        }
+
+
+        .report-number {
+            color: #99948d;
+            font-size: 10px;
+        }
+
+
+        .report-issue {
+            margin-top: 11px;
+
+            font-size: 15px;
+            font-weight: 850;
+        }
+
+
+        .report-description {
+            margin-top: 5px;
+
+            color: #68635d;
+
+            font-size: 11px;
+
+            line-height: 1.55;
+        }
+
+
+        .report-meta {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 7px 15px;
+
+            margin-top: 13px;
+
+            color: #89847e;
+
+            font-size: 9px;
+        }
+
+
+        /* ============================================= */
+        /* STATUS */
+        /* ============================================= */
+
+        .status {
+            display: inline-flex;
+
+            align-items: center;
+
+            padding: 6px 9px;
+
+            border-radius: 999px;
+
+            font-size: 9px;
+            font-weight: 850;
+
+            white-space: nowrap;
+        }
+
+
+        .status-reported {
+            background: #fff0f1;
+            color: #cb2734;
+        }
+
+
+        .status-inspection {
+            background: #fff6df;
+            color: #946500;
+        }
+
+
+        .status-maintenance {
+            background: #f1efff;
+            color: #5847aa;
+        }
+
+
+        .status-ready {
+            background: #e9f3ff;
+            color: #2366a1;
+        }
+
+
+        .status-resolved {
+            background: #eaf7ed;
+            color: #2d7540;
+        }
+
+
+        .status-available {
+            background: #eaf7ed;
+            color: #2d7540;
+        }
+
+
+        .status-use {
+            background: #fff6df;
+            color: #946500;
+        }
+
+
+        /* ============================================= */
+        /* SEVERITY */
+        /* ============================================= */
+
+        .severity {
+            display: inline-block;
+
+            padding: 5px 8px;
+
+            border-radius: 7px;
+
+            font-size: 9px;
+            font-weight: 800;
+        }
+
+
+        .severity-low {
+            background: #eef5ee;
+            color: #497052;
+        }
+
+
+        .severity-medium {
+            background: #fff4dd;
+            color: #8b650e;
+        }
+
+
+        .severity-high {
+            background: #ffeaec;
+            color: #b42835;
+        }
+
+
+        /* ============================================= */
+        /* WORKFLOW */
+        /* ============================================= */
+
+        .workflow {
+            margin-top: 15px;
+
+            padding-top: 14px;
+
+            border-top: 1px solid #efede9;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 12px;
+        }
+
+
+        .workflow-text {
+            color: #8a857e;
+
+            font-size: 9px;
+        }
+
+
+        .action-form {
+            margin: 0;
+        }
+
+
+        .action-button {
+            border: 0;
+
+            border-radius: 9px;
+
+            padding: 9px 13px;
+
+            font-size: 10px;
+            font-weight: 850;
+
+            cursor: pointer;
+
+            background: #171717;
+            color: white;
+        }
+
+
+        .action-button:hover {
+            opacity: 0.86;
+        }
+
+
+        .action-button.red {
+            background: #e63946;
+        }
+
+
+        .action-button.blue {
+            background: #286da8;
+        }
+
+
+        .action-button.green {
+            background: #39784a;
+        }
+
+
+        /* ============================================= */
+        /* EMPTY */
+        /* ============================================= */
+
+        .empty {
+            background: white;
+
+            border: 1px dashed #d5d1ca;
+
+            border-radius: 15px;
+
+            padding: 30px;
+
+            text-align: center;
+        }
+
+
+        .empty-icon {
+            font-size: 25px;
+        }
+
+
+        .empty-title {
+            margin-top: 7px;
+
+            font-size: 13px;
+            font-weight: 850;
+        }
+
+
+        .empty-text {
+            margin-top: 4px;
+
+            color: #89847e;
+
+            font-size: 10px;
+        }
+
+
+        /* ============================================= */
+        /* TABLE CARD */
+        /* ============================================= */
+
+        .table-card {
+            background: white;
+
+            border: 1px solid #e2dfda;
+
+            border-radius: 15px;
+
+            overflow: auto;
+        }
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+
+            min-width: 780px;
+        }
+
+
+        th {
+            padding: 12px 14px;
+
+            text-align: left;
+
+            background: #faf9f7;
+
+            border-bottom: 1px solid #e7e4df;
+
+            color: #8b867f;
+
+            font-size: 8px;
+            font-weight: 900;
+
+            letter-spacing: 0.7px;
+        }
+
+
+        td {
+            padding: 12px 14px;
+
+            border-bottom: 1px solid #f0eeea;
+
+            color: #4f4b46;
+
+            font-size: 10px;
+        }
+
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+
+        .strong {
+            color: #171717;
+            font-weight: 850;
+        }
+
+
+        .muted {
+            color: #99948d;
+        }
+
+
+        /* ============================================= */
+        /* STATIONS */
+        /* ============================================= */
+
+        .station-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, minmax(200px, 1fr));
+
+            gap: 10px;
+        }
+
+
+        .station-card {
+            background: white;
+
+            border: 1px solid #e2dfda;
+
+            border-radius: 14px;
+
+            padding: 15px;
+        }
+
+
+        .station-name {
+            font-size: 12px;
+            font-weight: 850;
+        }
+
+
+        .station-info {
+            margin-top: 10px;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 6px;
+        }
+
+
+        .station-stat {
+            padding: 9px;
+
+            background: #f8f7f4;
+
+            border-radius: 9px;
+
+            text-align: center;
+        }
+
+
+        .station-stat-number {
+            font-size: 15px;
+            font-weight: 850;
+        }
+
+
+        .station-stat-label {
+            margin-top: 2px;
+
+            color: #98938c;
+
+            font-size: 7px;
+
+            text-transform: uppercase;
+        }
+
+
+        /* ============================================= */
+        /* MOBILE */
+        /* ============================================= */
+
+        @media (
+            max-width: 1050px
+        ) {
+
+            .stats-grid {
+                grid-template-columns:
+                    repeat(3, 1fr);
+            }
+
+
+            .station-grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+        }
+
+
+        @media (
+            max-width: 760px
+        ) {
+
+            .sidebar {
+                display: none;
+            }
+
+
+            .content {
+                padding: 20px 14px;
+            }
+
+
+            .stats-grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+
+            .station-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .topbar {
+                padding: 14px;
+            }
+
+
+            .top-actions .top-link:first-child {
+                display: none;
+            }
+
+
+            .report-top,
+            .workflow {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+        }
+
+    
+
+        /* ============================================= */
+        /* CLEAN ADMIN SIDEBAR */
+        /* ============================================= */
+
+        .nav-link {
+            min-height: 42px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+
+        .nav-icon {
+            width: 22px;
+            min-width: 22px;
+            text-align: center;
+            color: #8d8881;
+            font-size: 16px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+
+        .nav-link.active .nav-icon {
+            color: #d62e3b;
+        }
+
+
+        /* ============================================= */
+        /* CAMPUS SERVICE AREA ACTION */
+        /* ============================================= */
+
+        .campus-area-action {
+            margin-top: 16px;
+
+            padding: 14px 15px;
+
+            border: 1px solid #f1c7cb;
+            border-radius: 14px;
+
+            background: #fff6f6;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+
+        .campus-area-action-text {
+            min-width: 0;
+        }
+
+
+        .campus-area-action-title {
+            color: #181818;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+
+        .campus-area-action-note {
+            margin-top: 3px;
+
+            color: #77716c;
+            font-size: 10px;
+            line-height: 15px;
+        }
+
+
+        .campus-area-button {
+            flex-shrink: 0;
+
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 10px 14px;
+
+            border-radius: 10px;
+
+            background: #e63946;
+            color: #ffffff;
+
+            text-decoration: none;
+
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+
+        .campus-area-button:hover {
+            opacity: 0.88;
+        }
+
+
+        @media (max-width: 850px) {
+
+            .campus-area-action {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+        }
+
+
+
+
+        /* ============================================= */
+        /* FLEET REBALANCING */
+        /* ============================================= */
+
+        .rebalance-form {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 260px;
+        }
+
+
+        .rebalance-select {
+            min-width: 165px;
+
+            padding: 8px 9px;
+
+            border: 1px solid #ddd8d1;
+            border-radius: 9px;
+
+            background: #ffffff;
+            color: #272522;
+
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+
+        .rebalance-button {
+            border: 0;
+            border-radius: 9px;
+
+            padding: 8px 11px;
+
+            background: #e63946;
+            color: #ffffff;
+
+            font-size: 10px;
+            font-weight: 900;
+
+            cursor: pointer;
+        }
+
+
+        .rebalance-button:hover {
+            opacity: 0.88;
+        }
+
+
+        .rebalance-unavailable {
+            color: #aaa49d;
+        }
+
+
+        .fleet-log-card {
+            margin-top: 22px;
+        }
+
+
+        .fleet-log-title {
+            font-size: 14px;
+            font-weight: 900;
+            color: #1c1b19;
+        }
+
+
+        .fleet-log-note {
+            margin-top: 3px;
+            margin-bottom: 10px;
+
+            color: #817c76;
+
+            font-size: 10px;
+            line-height: 15px;
+        }
+
+
+        .fleet-log-table {
+            margin-top: 8px;
+        }
+
+
+        .fleet-empty-log {
+            margin-top: 10px;
+
+            padding: 14px;
+
+            border: 1px dashed #ddd8d1;
+            border-radius: 11px;
+
+            color: #918b84;
+            font-size: 10px;
+        }
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- ====================================================== -->
+<!-- TOP BAR -->
+<!-- ====================================================== -->
+
+<header class="topbar">
+
+    <div class="brand-row">
+
+        <div class="brand-icon">
+            🚲
+        </div>
+
+        <div>
+
+            <div class="brand-name">
+                CampusBike
+            </div>
+
+            <div class="brand-subtitle">
+                Operations dashboard
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="top-actions">
+
+        <a
+            class="top-link"
+            href="{{ url_for('admin_qr_labels') }}"
+        >
+            QR labels
+        </a>
+
+        <a
+            class="top-link logout"
+            href="{{ url_for('admin_logout') }}"
+        >
+            Log out
+        </a>
+
+    </div>
+
+</header>
+
+
+
+<div class="layout">
+
+
+<!-- ====================================================== -->
+<!-- SIDEBAR -->
+<!-- ====================================================== -->
+
+<aside class="sidebar">
+
+    <div class="nav-title">
+        OPERATIONS
+    </div>
+
+
+    <a
+        class="nav-link"
+        href="#overview"
+    >
+        <span class="nav-icon">▦</span>
+        <span>Overview</span>
+    </a>
+
+
+    <a
+        class="nav-link"
+        href="#maintenance"
+    >
+        <span class="nav-icon">◇</span>
+        <span>Maintenance</span>
+    </a>
+
+
+    <a
+        class="nav-link"
+        href="#stations"
+    >
+        <span class="nav-icon">◎</span>
+        <span>Stations</span>
+    </a>
+
+
+    <a
+        class="nav-link"
+        href="#fleet"
+    >
+        <span class="nav-icon">◈</span>
+        <span>Fleet</span>
+    </a>
+
+
+    <a
+        class="nav-link"
+        href="#rides"
+    >
+        <span class="nav-icon">↗</span>
+        <span>Rides</span>
+    </a>
+
+
+    <a
+        class="nav-link"
+        href="#slots"
+    >
+        <span class="nav-icon">▥</span>
+        <span>Docks</span>
+    </a>
+
+
+    <a
+        class="nav-link"
+        href="#students"
+    >
+        <span class="nav-icon">○</span>
+        <span>Students</span>
+    </a>
+
+</aside>
+
+
+
+<!-- ====================================================== -->
+<!-- MAIN CONTENT -->
+<!-- ====================================================== -->
+
+<main class="content">
+
+
+<section id="overview">
+
+    <div class="page-kicker">
+        CAMPUSBIKE ADMIN
+    </div>
+
+    <h1 class="page-title">
+        Operations
+    </h1>
+
+    <div class="page-subtitle">
+        Live fleet, station and maintenance management.
+    </div>
+
+
+
+    <!-- FLASH MESSAGES -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            {% for category, message in messages %}
+
+                <div
+                    class="flash {{ category }}"
+                >
+                    {{ message }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    {% endwith %}
+
+
+
+    <!-- ================================================== -->
+    <!-- STATS -->
+    <!-- ================================================== -->
+
+    <div class="stats-grid">
+
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                TOTAL BIKES
+            </div>
+
+            <div class="stat-number">
+                {{ stats.total_bikes }}
+            </div>
+
+        </div>
+
+
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                AVAILABLE
+            </div>
+
+            <div class="stat-number">
+                {{ stats.available_bikes }}
+            </div>
+
+        </div>
+
+
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                IN USE
+            </div>
+
+            <div class="stat-number">
+                {{ stats.in_use }}
+            </div>
+
+        </div>
+
+
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                MAINTENANCE
+            </div>
+
+            <div class="stat-number red">
+
+                {{
+                    bikes
+                    | selectattr(
+                        'status',
+                        'equalto',
+                        'Maintenance'
+                    )
+                    | list
+                    | length
+                }}
+
+            </div>
+
+        </div>
+
+
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                ACTIVE RIDES
+            </div>
+
+            <div class="stat-number">
+                {{ stats.active_rides }}
+            </div>
+
+        </div>
+
+
+
+        <div class="stat-card">
+
+            <div class="stat-label">
+                COMPLETED RIDES
+            </div>
+
+            <div class="stat-number">
+                {{ stats.completed_rides }}
+            </div>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- ====================================================== -->
+<!-- MAINTENANCE -->
+<!-- ====================================================== -->
+
+<section
+    class="section"
+    id="maintenance"
+>
+
+
+    <div class="section-head">
+
+        <div class="section-title-row">
+
+            <div class="section-icon">
+                🔧
+            </div>
+
+            <div>
+
+                <h2 class="section-title">
+                    Maintenance
+                </h2>
+
+                <div class="section-note">
+                    Problems reported by students and the campus team.
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="count-pill">
+
+            {{
+                maintenance_reports
+                | rejectattr(
+                    'status',
+                    'equalto',
+                    'Resolved'
+                )
+                | list
+                | length
+            }}
+
+            open
+
+        </div>
+
+    </div>
+
+
+
+    {% if maintenance_reports %}
+
+
+        <div class="maintenance-list">
+
+
+        {% for report in maintenance_reports %}
+
+
+            <div class="report-card">
+
+
+                <div class="report-top">
+
+
+                    <div>
+
+
+                        <div class="report-bike-row">
+
+                            <span class="bike-badge">
+                                🚲 {{ report.bike_id }}
+                            </span>
+
+
+                            <span class="report-number">
+                                Report #{{ report.report_id }}
+                            </span>
+
+                        </div>
+
+
+
+                        <div class="report-issue">
+
+                            {% if report.issue_type == 'Brake' %}
+                                🔧
+                            {% elif report.issue_type == 'Tyre' %}
+                                🛞
+                            {% elif report.issue_type == 'Chain' %}
+                                🔗
+                            {% elif report.issue_type == 'Seat' %}
+                                💺
+                            {% elif report.issue_type == 'Lock/Dock' %}
+                                🔒
+                            {% elif report.issue_type == 'QR Code' %}
+                                ▦
+                            {% else %}
+                                🛠️
+                            {% endif %}
+
+                            {{ report.issue_type }}
+
+                        </div>
+
+
+
+                        {% if report.description %}
+
+                            <div class="report-description">
+                                {{ report.description }}
+                            </div>
+
+                        {% endif %}
+
+
+
+                        <div class="report-meta">
+
+                            <span>
+                                Student:
+                                <strong>
+                                    {{ report.student_id or '—' }}
+                                </strong>
+                            </span>
+
+
+                            <span>
+                                Reported:
+                                {{ report.reported_at }}
+                            </span>
+
+
+                            {% if report.resolved_at %}
+
+                                <span>
+                                    Resolved:
+                                    {{ report.resolved_at }}
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <div>
+
+
+                        {% if report.status == 'Reported' %}
+
+                            <span class="status status-reported">
+                                Reported
+                            </span>
+
+                        {% elif report.status == 'Under Inspection' %}
+
+                            <span class="status status-inspection">
+                                Under inspection
+                            </span>
+
+                        {% elif report.status == 'Maintenance' %}
+
+                            <span class="status status-maintenance">
+                                Maintenance
+                            </span>
+
+                        {% elif report.status == 'Ready' %}
+
+                            <span class="status status-ready">
+                                Ready
+                            </span>
+
+                        {% else %}
+
+                            <span class="status status-resolved">
+                                Resolved
+                            </span>
+
+                        {% endif %}
+
+
+
+                        <div style="margin-top: 7px;">
+
+
+                            {% if report.severity == 'High' %}
+
+                                <span class="severity severity-high">
+                                    High priority
+                                </span>
+
+                            {% elif report.severity == 'Low' %}
+
+                                <span class="severity severity-low">
+                                    Low priority
+                                </span>
+
+                            {% else %}
+
+                                <span class="severity severity-medium">
+                                    Medium priority
+                                </span>
+
+                            {% endif %}
+
+
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- ====================================== -->
+                <!-- WORKFLOW BUTTON -->
+                <!-- ====================================== -->
+
+                <div class="workflow">
+
+
+                    <div class="workflow-text">
+
+                        {% if report.status == 'Reported' %}
+
+                            Waiting for campus team inspection.
+
+                        {% elif report.status == 'Under Inspection' %}
+
+                            Bike is being inspected.
+
+                        {% elif report.status == 'Maintenance' %}
+
+                            Bike is out of service for repair.
+
+                        {% elif report.status == 'Ready' %}
+
+                            Repair complete. Final release required.
+
+                        {% else %}
+
+                            This report is complete.
+
+                        {% endif %}
+
+                    </div>
+
+
+
+                    {% if report.status == 'Reported' %}
+
+                        <form
+                            class="action-form"
+                            method="POST"
+                            action="{{ url_for(
+                                'admin_maintenance_update',
+                                report_id=report.report_id
+                            ) }}"
+                        >
+
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token() }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="status"
+                                value="Under Inspection"
+                            >
+
+                            <button
+                                class="action-button"
+                                type="submit"
+                            >
+                                Start inspection →
+                            </button>
+
+                        </form>
+
+
+
+                    {% elif report.status == 'Under Inspection' %}
+
+                        <form
+                            class="action-form"
+                            method="POST"
+                            action="{{ url_for(
+                                'admin_maintenance_update',
+                                report_id=report.report_id
+                            ) }}"
+                        >
+
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token() }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="status"
+                                value="Maintenance"
+                            >
+
+                            <button
+                                class="action-button red"
+                                type="submit"
+                            >
+                                Send to maintenance →
+                            </button>
+
+                        </form>
+
+
+
+                    {% elif report.status == 'Maintenance' %}
+
+                        <form
+                            class="action-form"
+                            method="POST"
+                            action="{{ url_for(
+                                'admin_maintenance_update',
+                                report_id=report.report_id
+                            ) }}"
+                        >
+
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token() }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="status"
+                                value="Ready"
+                            >
+
+                            <button
+                                class="action-button blue"
+                                type="submit"
+                            >
+                                Mark repaired →
+                            </button>
+
+                        </form>
+
+
+
+                    {% elif report.status == 'Ready' %}
+
+                        <form
+                            class="action-form"
+                            method="POST"
+                            action="{{ url_for(
+                                'admin_maintenance_update',
+                                report_id=report.report_id
+                            ) }}"
+                        >
+
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token() }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="status"
+                                value="Resolved"
+                            >
+
+                            <button
+                                class="action-button green"
+                                type="submit"
+                            >
+                                Return to service ✓
+                            </button>
+
+                        </form>
+
+                    {% endif %}
+
+
+                </div>
+
+
+            </div>
+
+
+        {% endfor %}
+
+
+        </div>
+
+
+    {% else %}
+
+
+        <div class="empty">
+
+            <div class="empty-icon">
+                🔧
+            </div>
+
+            <div class="empty-title">
+                No maintenance reports
+            </div>
+
+            <div class="empty-text">
+                Student reports will appear here.
+            </div>
+
+        </div>
+
+
+    {% endif %}
+
+
+</section>
+
+
+
+<!-- ====================================================== -->
+<!-- STATIONS -->
+<!-- ====================================================== -->
+
+<style>
+
+    .station-management-box {
+        background: #ffffff;
+        border: 1px solid #e6e1da;
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 20px;
+    }
+
+    .station-management-title {
+        font-size: 16px;
+        font-weight: 900;
+        color: #171717;
+        margin-bottom: 4px;
+    }
+
+    .station-management-note {
+        font-size: 11px;
+        color: #827d76;
+        margin-bottom: 16px;
+    }
+
+    .station-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .station-field-wrap {
+        min-width: 0;
+    }
+
+    .station-field-label {
+        display: block;
+        font-size: 10px;
+        font-weight: 800;
+        color: #6f6a64;
+        margin-bottom: 5px;
+    }
+
+    .station-field {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 11px;
+        border: 1px solid #dcd7d0;
+        border-radius: 9px;
+        background: #faf9f7;
+        color: #171717;
+        font-size: 12px;
+        outline: none;
+    }
+
+    .station-field:focus {
+        border-color: #e63946;
+        background: #ffffff;
+    }
+
+    .create-station-button {
+        margin-top: 15px;
+        border: 0;
+        border-radius: 10px;
+        padding: 11px 17px;
+        background: #e63946;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .station-public-title {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 13px;
+    }
+
+    .station-sponsor {
+        color: #e63946;
+        font-size: 13px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .station-display-name {
+        color: #171717;
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .station-settings-form {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #ece8e2;
+    }
+
+    .station-settings-heading {
+        color: #242424;
+        font-size: 11px;
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
+
+    .station-gps-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+    }
+
+    .station-save-button {
+        width: 100%;
+        border: 0;
+        border-radius: 9px;
+        margin-top: 12px;
+        padding: 10px 12px;
+        background: #171717;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .station-save-button:hover {
+        background: #e63946;
+    }
+
+    .station-gps-status {
+        margin-top: 9px;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .gps-ready {
+        color: #247847;
+    }
+
+    .gps-missing {
+        color: #9b711f;
+    }
+
+    @media (max-width: 750px) {
+        .station-form-grid,
+        .station-gps-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+</style>
+
+
+<section
+    class="section"
+    id="stations"
+>
+
+    <div class="section-head">
+
+        <div class="section-title-row">
+
+            <div class="section-icon">
+                ◉
+            </div>
+
+            <div>
+
+                <h2 class="section-title">
+                    Stations
+                </h2>
+
+                <div class="section-note">
+                    Create stations, manage naming partners and configure GPS.
+                </div>
+
+                <div class="campus-area-action">
+
+                    <div class="campus-area-action-text">
+
+                        <div class="campus-area-action-title">
+                            Campus service area
+                        </div>
+
+                        <div class="campus-area-action-note">
+                            Draw and manage the boundary where CampusBike can operate.
+                        </div>
+
+                    </div>
+
+
+                    <a
+                        href="{{ url_for('admin_campus_boundary') }}"
+                        class="campus-area-button"
+                    >
+                        Configure boundary
+                        <span>→</span>
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         CREATE NEW STATION
+    =================================================== -->
+
+    <div class="station-management-box">
+
+        <div class="station-management-title">
+            + Add Station
+        </div>
+
+        <div class="station-management-note">
+            Create a new CampusBike station and its docks.
+        </div>
+
+
+        <form
+            method="POST"
+            action="{{ url_for('admin_create_station') }}"
+        >
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+
+            <div class="station-form-grid">
+
+
+                <div class="station-field-wrap">
+
+                    <label class="station-field-label">
+                        Station name
+                    </label>
+
+                    <input
+                        class="station-field"
+                        type="text"
+                        name="display_name"
+                        placeholder="Clubhouse"
+                        maxlength="80"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="station-field-wrap">
+
+                    <label class="station-field-label">
+                        Naming partner
+                    </label>
+
+                    <input
+                        class="station-field"
+                        type="text"
+                        name="sponsor_name"
+                        placeholder="Spotify, Tata, Nike..."
+                        maxlength="80"
+                    >
+
+                </div>
+
+
+                <div class="station-field-wrap">
+
+                    <label class="station-field-label">
+                        Number of docks
+                    </label>
+
+                    <input
+                        class="station-field"
+                        type="number"
+                        name="total_slots"
+                        value="4"
+                        min="1"
+                        max="100"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="station-field-wrap">
+
+                    <label class="station-field-label">
+                        Latitude
+                    </label>
+
+                    <input
+                        class="station-field"
+                        type="number"
+                        step="any"
+                        name="latitude"
+                        placeholder="18.520430"
+                    >
+
+                </div>
+
+
+                <div class="station-field-wrap">
+
+                    <label class="station-field-label">
+                        Longitude
+                    </label>
+
+                    <input
+                        class="station-field"
+                        type="number"
+                        step="any"
+                        name="longitude"
+                        placeholder="73.856744"
+                    >
+
+                </div>
+
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="create-station-button"
+            >
+                Create Station
+            </button>
+
+
+        </form>
+
+    </div>
+
+
+    <!-- ==================================================
+         EXISTING STATIONS
+    =================================================== -->
+
+    <div class="station-grid">
+
+
+        {% for station in stations %}
+
+
+            <div class="station-card">
+
+
+                <!-- PUBLIC STATION NAME -->
+
+                <div class="station-public-title">
+
+                    {% if station.sponsor_name %}
+
+                        <span class="station-sponsor">
+                            {{ station.sponsor_name }}
+                        </span>
+
+                    {% endif %}
+
+
+                    <span class="station-display-name">
+
+                        {{
+                            station.display_name
+                            or station.station_name
+                        }}
+
+                    </span>
+
+                </div>
+
+
+                <!-- AVAILABILITY -->
+
+                <div class="station-info">
+
+
+                    <div class="station-stat">
+
+                        <div class="station-stat-number">
+                            {{ station.available_bikes }}
+                        </div>
+
+                        <div class="station-stat-label">
+                            Bikes
+                        </div>
+
+                    </div>
+
+
+                    <div class="station-stat">
+
+                        <div class="station-stat-number">
+                            {{ station.available_slots }}
+                        </div>
+
+                        <div class="station-stat-label">
+                            Free docks
+                        </div>
+
+                    </div>
+
+
+                    <div class="station-stat">
+
+                        <div class="station-stat-number">
+                            {{ station.total_slots }}
+                        </div>
+
+                        <div class="station-stat-label">
+                            Total docks
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- EDIT STATION -->
+
+                <form
+                    method="POST"
+                    action="{{ url_for(
+                        'admin_station_settings',
+                        station_id=station.station_id
+                    ) }}"
+                    class="station-settings-form"
+                >
+
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
+
+
+                    <div class="station-settings-heading">
+                        Station settings
+                    </div>
+
+
+                    <label class="station-field-label">
+                        Display name
+                    </label>
+
+                    <input
+                        class="station-field"
+                        type="text"
+                        name="display_name"
+                        value="{{
+                            station.display_name
+                            or station.station_name
+                        }}"
+                        maxlength="80"
+                        required
+                    >
+
+
+                    <label class="station-field-label">
+                        Naming partner
+                    </label>
+
+                    <input
+                        class="station-field"
+                        type="text"
+                        name="sponsor_name"
+                        value="{{ station.sponsor_name or '' }}"
+                        placeholder="Optional"
+                        maxlength="80"
+                    >
+
+
+                    <div class="station-gps-grid">
+
+
+                        <div>
+
+                            <label class="station-field-label">
+                                Latitude
+                            </label>
+
+                            <input
+                                class="station-field"
+                                type="number"
+                                step="any"
+                                name="latitude"
+                                value="{{
+                                    station.latitude
+                                    if station.latitude is not none
+                                    else ''
+                                }}"
+                                placeholder="18.520430"
+                            >
+
+                        </div>
+
+
+                        <div>
+
+                            <label class="station-field-label">
+                                Longitude
+                            </label>
+
+                            <input
+                                class="station-field"
+                                type="number"
+                                step="any"
+                                name="longitude"
+                                value="{{
+                                    station.longitude
+                                    if station.longitude is not none
+                                    else ''
+                                }}"
+                                placeholder="73.856744"
+                            >
+
+                        </div>
+
+
+                    </div>
+
+
+                    <div class="station-gps-status">
+
+                        {% if
+                            station.latitude is not none
+                            and station.longitude is not none
+                        %}
+
+                            <span class="gps-ready">
+                                GPS configured
+                            </span>
+
+                        {% else %}
+
+                            <span class="gps-missing">
+                                GPS not configured
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <button
+                        type="submit"
+                        class="station-save-button"
+                    >
+                        Save changes
+                    </button>
+
+
+                </form>
+
+
+            </div>
+
+
+        {% endfor %}
+
+
+    </div>
+
+
+</section>
+
+
+<!-- ====================================================== -->
+<!-- FLEET -->
+<!-- ====================================================== -->
+
+<section
+    class="section"
+    id="fleet"
+>
+
+    <div class="section-head">
+
+        <div class="section-title-row">
+
+            <div class="section-icon">
+                ◈
+            </div>
+
+            <div>
+
+                <h2 class="section-title">
+                    Fleet
+                </h2>
+
+                <div class="section-note">
+                    Fleet status and staff rebalancing operations.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="table-card">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>BIKE</th>
+                    <th>STATUS</th>
+                    <th>STATION</th>
+                    <th>DOCK</th>
+                    <th>LOCK</th>
+                    <th>CURRENT USER</th>
+                    <th>RIDES</th>
+                    <th>REBALANCE</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            {% for bike in bikes %}
+
+                <tr>
+
+                    <td class="strong">
+                        {{ bike.bike_id }}
+                    </td>
+
+
+                    <td>
+
+                        {% if bike.status == 'Available' %}
+
+                            <span class="status status-available">
+                                Available
+                            </span>
+
+                        {% elif bike.status == 'Maintenance' %}
+
+                            <span class="status status-maintenance">
+                                Maintenance
+                            </span>
+
+                        {% elif bike.status == 'Rebalancing' %}
+
+                            <span class="status status-use">
+                                Rebalancing
+                            </span>
+
+                        {% else %}
+
+                            <span class="status status-use">
+                                {{ bike.status }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        {% if bike.status == 'Rebalancing' %}
+
+                            In transit
+
+                        {% else %}
+
+                            {{
+                                bike.station_public_name
+                                or
+                                bike.station
+                                or
+                                'On ride'
+                            }}
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+                        {{ bike.slot or '—' }}
+                    </td>
+
+
+                    <td>
+                        {{ bike.lock_status or '—' }}
+                    </td>
+
+
+                    <td>
+                        {{ bike.current_user or '—' }}
+                    </td>
+
+
+                    <td>
+                        {{ bike.total_rides }}
+                    </td>
+
+
+                    <td>
+
+
+                        <!-- AVAILABLE -> START MOVE -->
+
+                        {% if
+                            bike.status == 'Available'
+                            and bike.station_id
+                            and bike.slot
+                        %}
+
+                            <form
+
+                                method="POST"
+
+                                action="{{
+                                    url_for(
+                                        'admin_rebalance_bike',
+                                        bike_id=bike.bike_id
+                                    )
+                                }}"
+
+                                class="rebalance-form"
+
+                                onsubmit="
+                                    return confirm(
+                                        'Start staff rebalancing for this bike?'
+                                    );
+                                "
+
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+
+                                <select
+                                    name="destination_station_id"
+                                    class="rebalance-select"
+                                    required
+                                >
+
+                                    <option value="">
+                                        Destination…
+                                    </option>
+
+
+                                    {% for station in rebalance_stations %}
+
+                                        {% if
+                                            station.campus_id
+                                            ==
+                                            bike.campus_id
+
+                                            and
+
+                                            station.station_id
+                                            !=
+                                            bike.station_id
+                                        %}
+
+                                            <option
+                                                value="{{ station.station_id }}"
+                                            >
+                                                {{ station.public_name }}
+                                            </option>
+
+                                        {% endif %}
+
+                                    {% endfor %}
+
+                                </select>
+
+
+                                <button
+                                    type="submit"
+                                    class="rebalance-button"
+                                >
+                                    Start
+                                </button>
+
+                            </form>
+
+
+
+                        <!-- IN TRANSIT -> COMPLETE MOVE -->
+
+                        {% elif
+                            bike.status == 'Rebalancing'
+                            and bike.pending_movement_id
+                        %}
+
+                            <div class="rebalance-transit-note">
+
+                                Reserved:
+
+                                <strong>
+                                    {{ bike.planned_station_name }}
+                                    ·
+                                    {{ bike.planned_slot }}
+                                </strong>
+
+                            </div>
+
+
+                            <form
+
+                                method="POST"
+
+                                action="{{
+                                    url_for(
+                                        'admin_complete_rebalance_bike',
+                                        bike_id=bike.bike_id
+                                    )
+                                }}"
+
+                                onsubmit="
+                                    return confirm(
+                                        'Confirm this bike is physically locked in its reserved dock?'
+                                    );
+                                "
+
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+
+                                <button
+                                    type="submit"
+                                    class="rebalance-complete-button"
+                                >
+                                    Complete
+                                </button>
+
+                            </form>
+
+
+                        {% else %}
+
+                            <span class="rebalance-unavailable">
+                                —
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <div class="fleet-log-card">
+
+        <div class="fleet-log-title">
+            Rebalancing history
+        </div>
+
+        <div class="fleet-log-note">
+            Staff movements remain separate from student rides.
+        </div>
+
+
+        {% if bike_movements %}
+
+            <div class="table-card fleet-log-table">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>STARTED</th>
+                            <th>STATUS</th>
+                            <th>BIKE</th>
+                            <th>FROM</th>
+                            <th>DESTINATION</th>
+                            <th>ADMIN</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    {% for movement in bike_movements %}
+
+                        <tr>
+
+                            <td>
+                                {{
+                                    movement.started_at
+                                    or
+                                    movement.moved_at
+                                }}
+                            </td>
+
+
+                            <td>
+
+                                {% if
+                                    movement.movement_status
+                                    ==
+                                    'In Transit'
+                                %}
+
+                                    <span class="status status-use">
+                                        In transit
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="status status-available">
+                                        Completed
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td class="strong">
+                                {{ movement.bike_id }}
+                            </td>
+
+
+                            <td>
+
+                                {{ movement.from_station_name }}
+                                ·
+                                {{ movement.from_slot }}
+
+                            </td>
+
+
+                            <td>
+
+                                {{ movement.to_station_name }}
+
+                                {% if
+                                    movement.to_slot
+                                    and
+                                    movement.to_slot != 'Pending'
+                                %}
+
+                                    ·
+                                    {{ movement.to_slot }}
+
+                                {% else %}
+
+                                    · reserved
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+                                {{ movement.admin_username or 'Admin' }}
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+        {% else %}
+
+            <div class="fleet-empty-log">
+                No rebalancing movements recorded yet.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+
+<section
+    class="section"
+    id="rides"
+>
+
+
+    <div class="section-head">
+
+        <div class="section-title-row">
+
+            <div class="section-icon">
+                ↗
+            </div>
+
+            <div>
+
+                <h2 class="section-title">
+                    Rides
+                </h2>
+
+                <div class="section-note">
+                    Latest student rides.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="table-card">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        RIDE
+                    </th>
+
+                    <th>
+                        BIKE
+                    </th>
+
+                    <th>
+                        STUDENT
+                    </th>
+
+                    <th>
+                        FROM
+                    </th>
+
+                    <th>
+                        TO
+                    </th>
+
+                    <th>
+                        STARTED
+                    </th>
+
+                    <th>
+                        RETURNED
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+            {% for ride in rides %}
+
+                <tr>
+
+                    <td class="strong">
+                        #{{ ride.ride_id }}
+                    </td>
+
+                    <td>
+                        {{ ride.bike_id }}
+                    </td>
+
+                    <td>
+                        {{ ride.student_id }}
+                    </td>
+
+                    <td>
+
+                        {{ ride.start_station or '—' }}
+
+                        {% if ride.start_slot %}
+
+                            <span class="muted">
+                                · {{ ride.start_slot }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {{ ride.return_station or '—' }}
+
+                        {% if ride.return_slot %}
+
+                            <span class="muted">
+                                · {{ ride.return_slot }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ ride.rented_at }}
+                    </td>
+
+                    <td>
+                        {{ ride.returned_at or 'Active' }}
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+</section>
+
+
+
+<!-- ====================================================== -->
+<!-- DOCKS / SLOTS -->
+<!-- ====================================================== -->
+
+<section
+    class="section"
+    id="slots"
+>
+
+
+    <div class="section-head">
+
+        <div class="section-title-row">
+
+            <div class="section-icon">
+                ▦
+            </div>
+
+            <div>
+
+                <h2 class="section-title">
+                    Docks
+                </h2>
+
+                <div class="section-note">
+                    Physical slot allocation by station.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="table-card">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        STATION
+                    </th>
+
+                    <th>
+                        SLOT
+                    </th>
+
+                    <th>
+                        BIKE
+                    </th>
+
+                    <th>
+                        STATUS
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+            {% for slot in slots %}
+
+                <tr>
+
+                    <td class="strong">
+                        {{ slot.station_name }}
+                    </td>
+
+                    <td>
+                        {{ slot.slot_number }}
+                    </td>
+
+                    <td>
+                        {{ slot.bike_id or '—' }}
+                    </td>
+
+                    <td>
+
+                        {% if slot.status == 'Available' %}
+
+                            <span class="status status-available">
+                                Available
+                            </span>
+
+                        {% else %}
+
+                            <span class="status status-use">
+                                {{ slot.status }}
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+</section>
+
+
+
+<!-- ====================================================== -->
+<!-- STUDENTS -->
+<!-- ====================================================== -->
+
+<section
+    class="section"
+    id="students"
+    style="margin-bottom: 60px;"
+>
+
+
+    <div class="section-head">
+
+        <div class="section-title-row">
+
+            <div class="section-icon">
+                ◯
+            </div>
+
+            <div>
+
+                <h2 class="section-title">
+                    Students
+                </h2>
+
+                <div class="section-note">
+                    Verified student accounts.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="table-card">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        STUDENT ID
+                    </th>
+
+                    <th>
+                        NAME
+                    </th>
+
+                    <th>
+                        EMAIL
+                    </th>
+
+                    <th>
+                        STATUS
+                    </th>
+
+                    <th>
+                        CREATED
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+            {% for student in students %}
+
+                <tr>
+
+                    <td class="strong">
+                        {{ student.student_id }}
+                    </td>
+
+                    <td>
+                        {{ student.name }}
+                    </td>
+
+                    <td>
+                        {{ student.email or '—' }}
+                    </td>
+
+                    <td>
+
+                        {% if student.active %}
+
+                            <span class="status status-available">
+                                Active
+                            </span>
+
+                        {% else %}
+
+                            <span class="status status-reported">
+                                Inactive
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ student.created_at or '—' }}
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+</section>
+
+
+</main>
+
+
+</div>
+
+
+
+<script>
+
+// =========================================================
+// CAMPUSBIKE ADMIN TABS
+// =========================================================
+
+const ADMIN_SECTIONS = [
+    'overview',
+    'maintenance',
+    'stations',
+    'fleet',
+    'rides',
+    'slots',
+    'students'
+];
+
+
+function openAdminSection(
+    sectionName
+) {
+
+    // Invalid / empty hash -> Overview
+    if (
+        !ADMIN_SECTIONS.includes(
+            sectionName
+        )
+    ) {
+
+        sectionName =
+            'overview';
+
+    }
+
+
+    // -----------------------------------------------------
+    // SHOW ONLY SELECTED SECTION
+    // -----------------------------------------------------
+
+    ADMIN_SECTIONS.forEach(
+        id => {
+
+            const section =
+                document.getElementById(
+                    id
+                );
+
+
+            if (!section) {
+                return;
+            }
+
+
+            section.style.display =
+                id === sectionName
+                    ? ''
+                    : 'none';
+
+        }
+    );
+
+
+    // -----------------------------------------------------
+    // ACTIVE SIDEBAR TAB
+    // -----------------------------------------------------
+
+    document
+        .querySelectorAll(
+            '.sidebar .nav-link'
+        )
+        .forEach(
+            link => {
+
+                const href =
+                    link.getAttribute(
+                        'href'
+                    );
+
+
+                link.classList.toggle(
+                    'active',
+                    href ===
+                        `#${sectionName}`
+                );
+
+            }
+        );
+
+}
+
+
+// =========================================================
+// SIDEBAR CLICK
+// =========================================================
+
+document
+    .querySelectorAll(
+        '.sidebar .nav-link'
+    )
+    .forEach(
+        link => {
+
+            link.addEventListener(
+                'click',
+                event => {
+
+                    const href =
+                        link.getAttribute(
+                            'href'
+                        );
+
+
+                    if (
+                        !href ||
+                        !href.startsWith('#')
+                    ) {
+                        return;
+                    }
+
+
+                    event.preventDefault();
+
+
+                    const sectionName =
+                        href.substring(1);
+
+
+                    history.pushState(
+                        null,
+                        '',
+                        href
+                    );
+
+
+                    openAdminSection(
+                        sectionName
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+// =========================================================
+// BROWSER BACK / FORWARD / HASH CHANGE
+// =========================================================
+
+window.addEventListener(
+    'popstate',
+    () => {
+
+        openAdminSection(
+            window.location.hash
+                .replace('#', '')
+        );
+
+    }
+);
+
+
+window.addEventListener(
+    'hashchange',
+    () => {
+
+        openAdminSection(
+            window.location.hash
+                .replace('#', '')
+        );
+
+    }
+);
+
+
+// =========================================================
+// INITIAL PAGE
+// =========================================================
+
+openAdminSection(
+    window.location.hash
+        .replace('#', '')
+);
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ bike['bike_id'] }} · CampusBike{% endblock %}
+{% block content %}
+<section class="hero compact">
+    <div class="eyebrow">STEP 3 · CONFIRM BIKE</div>
+    <h1>Bike <span>{{ bike['bike_id'] }}</span></h1>
+    <p class="lead">You selected this bike at {{ bike['station'] or 'the station' }}.</p>
+</section>
+
+<div class="detail-card">
+    <div><span>Status</span><strong>{{ bike['status'] }}</strong></div>
+    <div><span>Station</span><strong>{{ bike['station'] or '—' }}</strong></div>
+    <div><span>Slot</span><strong>{{ bike['slot'] or '—' }}</strong></div>
+    <div><span>Lock</span><strong>{{ bike['lock_status'] or '—' }}</strong></div>
+</div>
+
+{% if active_ride %}
+<div class="notice warning">You already have an active ride on {{ active_ride['bike_id'] }}.</div>
+{% elif bike['status'] == 'Available' %}
+<a class="camera-rent-button" href="{{ url_for('scan_bike', bike_id=bike['bike_id']) }}">📷 Rent · Scan bike QR</a>
+<p class="tiny centered">The camera verifies that you are scanning the QR attached to {{ bike['bike_id'] }}.</p>
+{% else %}
+<div class="notice warning">This bike is no longer available.</div>
+{% endif %}
+{% endblock %}
