@@ -2694,6 +2694,38 @@
                             </form>
 
 
+                            <form
+                                method="POST"
+                                action="{{
+                                    url_for(
+                                        'admin_cancel_rebalance_bike',
+                                        bike_id=bike.bike_id
+                                    )
+                                }}"
+                                style="margin-top: 8px;"
+                                onsubmit="
+                                    return confirm(
+                                        'Cancel only if the bike has been physically returned to its original source dock. Continue?'
+                                    );
+                                "
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="action-button red"
+                                >
+                                    Cancel move
+                                </button>
+
+                            </form>
+
+
                         {% else %}
 
                             <span class="rebalance-unavailable">
@@ -2774,6 +2806,16 @@
 
                                     <span class="status status-use">
                                         In transit
+                                    </span>
+
+                                {% elif
+                                    movement.movement_status
+                                    ==
+                                    'Cancelled'
+                                %}
+
+                                    <span class="status status-reported">
+                                        Cancelled
                                     </span>
 
                                 {% else %}
