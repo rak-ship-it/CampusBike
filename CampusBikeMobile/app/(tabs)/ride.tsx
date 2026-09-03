@@ -44,6 +44,18 @@ type ActiveRide = {
   bike_status: string | null;
   lock_status: string | null;
   current_user: string | null;
+
+  reserved_return_station_id?: number | null;
+  reserved_return_station?: string | null;
+  reserved_return_slot?: string | null;
+};
+
+
+type ReturnReservation = {
+  bike_id: string;
+  station_id: number;
+  station: string;
+  slot: string;
 };
 
 
@@ -177,6 +189,9 @@ export default function RideScreen() {
   const [selectedStation, setSelectedStation] =
     useState<Station | null>(null);
 
+  const [returnReservation, setReturnReservation] =
+    useState<ReturnReservation | null>(null);
+
   const [error, setError] =
     useState('');
 
@@ -264,9 +279,40 @@ export default function RideScreen() {
       }
 
 
+      const activeRide: ActiveRide | null =
+        rideData.active_ride;
+
+
       setRide(
-        rideData.active_ride
+        activeRide
       );
+
+
+      if (
+        activeRide?.reserved_return_station_id &&
+        activeRide?.reserved_return_station &&
+        activeRide?.reserved_return_slot
+      ) {
+
+        setReturnReservation({
+          bike_id:
+            activeRide.bike_id,
+
+          station_id:
+            activeRide.reserved_return_station_id,
+
+          station:
+            activeRide.reserved_return_station,
+
+          slot:
+            activeRide.reserved_return_slot,
+        });
+
+      } else {
+
+        setReturnReservation(null);
+
+      }
 
 
       if (stationResponse.ok) {
@@ -305,7 +351,7 @@ export default function RideScreen() {
   // END RIDE
   // =====================================================
 
-  async function endRide() {
+  async function reserveReturnDock() {
 
     if (
       !student ||
@@ -568,11 +614,11 @@ export default function RideScreen() {
 
 
       // =================================================
-      // GPS CHECK PASSED — COMPLETE RETURN
+      // GPS CHECK PASSED — RESERVE AN EXACT RETURN DOCK
       // =================================================
 
       const response = await fetch(
-        `${API_BASE_URL}/api/end-ride`,
+        `${API_BASE_URL}/api/reserve-return-slot`,
         {
           method: 'POST',
 
@@ -604,8 +650,16 @@ export default function RideScreen() {
         !data.success
       ) {
 
+        if (data.reservation) {
+
+          setReturnReservation(
+            data.reservation
+          );
+
+        }
+
         Alert.alert(
-          'Could not end ride',
+          'Could not reserve dock',
           data.message ||
           'Please try again.'
         );
@@ -615,20 +669,17 @@ export default function RideScreen() {
       }
 
 
-      Alert.alert(
-        'Ride complete',
-        `${data.return.bike_id} returned to ${data.return.station}, ${data.return.slot}.`
+      setReturnReservation(
+        data.reservation
       );
-
-
-      setRide(null);
-
-      setSelectedStation(null);
 
       setShowStations(false);
 
 
-      await loadRide();
+      Alert.alert(
+        'Return dock assigned',
+        `Use ${data.reservation.slot} at ${data.reservation.station}. Put ${data.reservation.bike_id} into that numbered dock, then confirm in the app.`
+      );
 
 
     } catch (error) {
@@ -644,6 +695,187 @@ export default function RideScreen() {
         'Could not connect to CampusBike.'
       );
 
+
+    } finally {
+
+      setEndingRide(false);
+
+    }
+
+  }
+
+
+  // =====================================================
+  // CONFIRM BIKE IS IN THE ASSIGNED DOCK
+  // =====================================================
+
+  async function confirmDocked() {
+
+    if (
+      !student ||
+      !returnReservation
+    ) {
+      return;
+    }
+
+
+    setEndingRide(true);
+
+
+    try {
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/end-ride`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify({
+            student_id:
+              student.student_id,
+
+            station_id:
+              returnReservation.station_id,
+
+            slot_number:
+              returnReservation.slot,
+          }),
+        }
+      );
+
+
+      const data =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+
+        Alert.alert(
+          'Could not complete return',
+          data.message ||
+          'Please try again.'
+        );
+
+        return;
+
+      }
+
+
+      Alert.alert(
+        'Ride complete',
+        `${data.return.bike_id} is returned at ${data.return.station}, ${data.return.slot}.`
+      );
+
+
+      setRide(null);
+      setReturnReservation(null);
+      setSelectedStation(null);
+      setShowStations(false);
+
+
+      await loadRide();
+
+
+    } catch (error) {
+
+      console.log(
+        'Confirm dock error:',
+        error
+      );
+
+      Alert.alert(
+        'Connection error',
+        'Could not connect to CampusBike.'
+      );
+
+    } finally {
+
+      setEndingRide(false);
+
+    }
+
+  }
+
+
+  // =====================================================
+  // CANCEL STUDENT RETURN DOCK ASSIGNMENT
+  // =====================================================
+
+  async function cancelReturnReservation() {
+
+    if (!student) {
+      return;
+    }
+
+
+    setEndingRide(true);
+
+
+    try {
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/cancel-return-slot`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify({
+            student_id:
+              student.student_id,
+          }),
+        }
+      );
+
+
+      const data =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+
+        Alert.alert(
+          'Could not cancel assignment',
+          data.message ||
+          'Please try again.'
+        );
+
+        return;
+
+      }
+
+
+      setReturnReservation(null);
+      setSelectedStation(null);
+      setShowStations(true);
+
+      await loadRide();
+
+
+    } catch (error) {
+
+      console.log(
+        'Cancel return assignment error:',
+        error
+      );
+
+      Alert.alert(
+        'Connection error',
+        'Could not connect to CampusBike.'
+      );
 
     } finally {
 
@@ -733,7 +965,7 @@ export default function RideScreen() {
 
 
             <Text style={styles.errorTitle}>
-              Couldn't load your ride
+              Couldn&apos;t load your ride
             </Text>
 
 
@@ -875,7 +1107,117 @@ export default function RideScreen() {
 
             {/* END RIDE */}
 
-            {!showStations ? (
+            {returnReservation ? (
+
+              <View style={styles.returnCard}>
+
+                <Text style={styles.smallLabel}>
+                  ASSIGNED RETURN DOCK
+                </Text>
+
+                <Text style={styles.returnTitle}>
+                  {returnReservation.station}
+                </Text>
+
+
+                <View
+                  style={{
+                    marginTop: 18,
+                    marginBottom: 18,
+                    paddingVertical: 22,
+                    borderRadius: 18,
+                    alignItems: 'center',
+                    backgroundColor: '#FFF0F1',
+                    borderWidth: 1,
+                    borderColor: '#F2C9CD',
+                  }}
+                >
+
+                  <Text
+                    style={{
+                      color: '#8B3A42',
+                      fontSize: 10,
+                      fontWeight: '900',
+                      letterSpacing: 1.4,
+                    }}
+                  >
+                    RETURN HERE
+                  </Text>
+
+                  <Text
+                    style={{
+                      marginTop: 5,
+                      color: '#E63946',
+                      fontSize: 38,
+                      fontWeight: '900',
+                    }}
+                  >
+                    {returnReservation.slot}
+                  </Text>
+
+                </View>
+
+
+                <Text style={styles.returnSubtitle}>
+                  Put {returnReservation.bike_id} into the physical dock with this exact number. Later the smart dock will confirm the lock automatically.
+                </Text>
+
+
+                <Pressable
+                  disabled={endingRide}
+                  onPress={confirmDocked}
+                  style={[
+                    styles.confirmReturnButton,
+                    endingRide && styles.disabledButton,
+                  ]}
+                >
+
+                  {endingRide ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name="lock-closed-outline"
+                        size={20}
+                        color="#FFFFFF"
+                      />
+
+                      <Text style={styles.confirmReturnText}>
+                        I&apos;ve docked the bike
+                      </Text>
+                    </>
+                  )}
+
+                </Pressable>
+
+
+                <Pressable
+                  disabled={endingRide}
+                  onPress={cancelReturnReservation}
+                  style={styles.retryButton}
+                >
+
+                  <Text style={styles.retryText}>
+                    Cancel return assignment
+                  </Text>
+
+                </Pressable>
+
+
+                <Text
+                  style={{
+                    marginTop: 12,
+                    color: '#99948D',
+                    fontSize: 9,
+                    lineHeight: 14,
+                  }}
+                >
+                  Prototype mode: this confirmation button stands in for the future physical smart-dock lock sensor.
+                </Text>
+
+              </View>
+
+            ) : !showStations ? (
 
               <Pressable
                 style={styles.endRideButton}
@@ -1061,7 +1403,7 @@ export default function RideScreen() {
 
                     disabled={endingRide}
 
-                    onPress={endRide}
+                    onPress={reserveReturnDock}
 
                     style={[
                       styles.confirmReturnButton,
@@ -1089,7 +1431,7 @@ export default function RideScreen() {
                         />
 
                         <Text style={styles.confirmReturnText}>
-                          Return at {selectedStation.station_name}
+                          Get dock at {selectedStation.station_name}
                         </Text>
 
                       </>
@@ -1117,7 +1459,7 @@ export default function RideScreen() {
 
 
               <Text style={styles.returnNoteText}>
-                CampusBike automatically assigns the first available dock slot at the station you select.
+                After GPS confirms you are near the station, CampusBike reserves an exact numbered dock for your bike.
               </Text>
 
             </View>
@@ -1153,7 +1495,7 @@ export default function RideScreen() {
 
 
               <Text style={styles.emptyText}>
-                You don't currently have a CampusBike checked out.
+                You don&apos;t currently have a CampusBike checked out.
               </Text>
 
 

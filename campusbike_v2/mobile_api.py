@@ -447,10 +447,10 @@ def get_active_ride(student_id):
 
     ride = cursor.fetchone()
 
-    connection.close()
-
 
     if ride is None:
+
+        connection.close()
 
         return jsonify({
             "success": True,
@@ -458,9 +458,82 @@ def get_active_ride(student_id):
         })
 
 
+    # -----------------------------------------------------
+    # RECOVER ANY PENDING STUDENT RETURN DOCK RESERVATION
+    # -----------------------------------------------------
+    #
+    # This lets the app recover correctly after a refresh
+    # or restart while the student is walking the bike into
+    # the assigned dock.
+    # -----------------------------------------------------
+
+    cursor.execute("""
+        SELECT
+            sl.station_id,
+            sl.slot_number,
+
+            COALESCE(
+                NULLIF(TRIM(s.display_name), ''),
+                s.station_name
+            ) AS display_name,
+
+            s.sponsor_name
+
+        FROM slots sl
+
+        JOIN stations s
+            ON s.station_id = sl.station_id
+
+        WHERE
+            sl.bike_id = ?
+            AND sl.status = 'Reserved'
+            AND s.active = 1
+
+        ORDER BY sl.slot_id
+
+        LIMIT 1
+    """, (
+        ride["bike_id"],
+    ))
+
+
+    reservation = cursor.fetchone()
+
+    active_ride = dict(ride)
+
+
+    if reservation:
+
+        sponsor_name = (
+            str(reservation["sponsor_name"]).strip()
+            if reservation["sponsor_name"]
+            else ""
+        )
+
+        public_name = (
+            f"{sponsor_name} {reservation['display_name']}"
+            if sponsor_name
+            else reservation["display_name"]
+        )
+
+        active_ride.update({
+            "reserved_return_station_id":
+                reservation["station_id"],
+
+            "reserved_return_station":
+                public_name,
+
+            "reserved_return_slot":
+                reservation["slot_number"],
+        })
+
+
+    connection.close()
+
+
     return jsonify({
         "success": True,
-        "active_ride": dict(ride)
+        "active_ride": active_ride
     })
 
 
@@ -1059,6 +1132,514 @@ def bike_by_qr():
     })
 
 # =========================================================
+# RESERVE STUDENT RETURN DOCK
+# =========================================================
+
+@mobile_api.route(
+    "/reserve-return-slot",
+    methods=["POST"]
+)
+def reserve_return_slot():
+
+    data = request.get_json(silent=True) or {}
+
+    student_id = str(
+        data.get("student_id", "")
+    ).strip().upper()
+
+    station_id = data.get("station_id")
+
+
+    if not student_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Student ID is missing."
+        }), 400
+
+
+    try:
+        station_id = int(station_id)
+    except (TypeError, ValueError):
+        return jsonify({
+            "success": False,
+            "message": "Invalid return station."
+        }), 400
+
+
+    connection = get_db()
+    cursor = connection.cursor()
+
+
+    try:
+
+        cursor.execute("BEGIN IMMEDIATE")
+
+
+        # -------------------------------------------------
+        # ACTIVE RIDE + BIKE
+        # -------------------------------------------------
+
+        cursor.execute("""
+            SELECT
+                r.ride_id,
+                r.bike_id,
+                b.status AS bike_status,
+                b.current_user
+
+            FROM rides r
+
+            JOIN bikes b
+                ON b.bike_id = r.bike_id
+
+            WHERE
+                r.student_id = ?
+                AND r.returned_at IS NULL
+
+            ORDER BY r.ride_id DESC
+
+            LIMIT 1
+        """, (
+            student_id,
+        ))
+
+
+        ride = cursor.fetchone()
+
+
+        if ride is None:
+
+            connection.rollback()
+
+            return jsonify({
+                "success": False,
+                "message": "You do not have an active ride."
+            }), 409
+
+
+        if (
+            ride["bike_status"] != "In use"
+            or ride["current_user"] != student_id
+        ):
+
+            connection.rollback()
+
+            return jsonify({
+                "success": False,
+                "message": "The active bike is not assigned correctly."
+            }), 409
+
+
+        bike_id = ride["bike_id"]
+
+
+        # -------------------------------------------------
+        # EXISTING STUDENT RESERVATION
+        # -------------------------------------------------
+
+        cursor.execute("""
+            SELECT
+                sl.slot_id,
+                sl.station_id,
+                sl.slot_number,
+
+                COALESCE(
+                    NULLIF(TRIM(s.display_name), ''),
+                    s.station_name
+                ) AS display_name,
+
+                s.sponsor_name
+
+            FROM slots sl
+
+            JOIN stations s
+                ON s.station_id = sl.station_id
+
+            WHERE
+                sl.bike_id = ?
+                AND sl.status = 'Reserved'
+
+            ORDER BY sl.slot_id
+
+            LIMIT 1
+        """, (
+            bike_id,
+        ))
+
+
+        existing = cursor.fetchone()
+
+
+        if existing:
+
+            sponsor_name = (
+                str(existing["sponsor_name"]).strip()
+                if existing["sponsor_name"]
+                else ""
+            )
+
+            existing_public = (
+                f"{sponsor_name} {existing['display_name']}"
+                if sponsor_name
+                else existing["display_name"]
+            )
+
+
+            if existing["station_id"] != station_id:
+
+                connection.rollback()
+
+                return jsonify({
+                    "success": False,
+                    "message":
+                        f"You already have {existing['slot_number']} reserved at {existing_public}. Cancel that return assignment before choosing another station.",
+                    "reservation": {
+                        "bike_id": bike_id,
+                        "station_id": existing["station_id"],
+                        "station": existing_public,
+                        "slot": existing["slot_number"],
+                    }
+                }), 409
+
+
+            connection.commit()
+
+            return jsonify({
+                "success": True,
+                "already_reserved": True,
+                "reservation": {
+                    "bike_id": bike_id,
+                    "station_id": existing["station_id"],
+                    "station": existing_public,
+                    "slot": existing["slot_number"],
+                }
+            })
+
+
+        # -------------------------------------------------
+        # RETURN STATION
+        # -------------------------------------------------
+
+        cursor.execute("""
+            SELECT
+                station_id,
+                station_name,
+
+                COALESCE(
+                    NULLIF(TRIM(display_name), ''),
+                    station_name
+                ) AS display_name,
+
+                sponsor_name,
+                active
+
+            FROM stations
+
+            WHERE station_id = ?
+        """, (
+            station_id,
+        ))
+
+
+        station = cursor.fetchone()
+
+
+        if station is None or station["active"] != 1:
+
+            connection.rollback()
+
+            return jsonify({
+                "success": False,
+                "message": "Return station is unavailable."
+            }), 409
+
+
+        sponsor_name = (
+            str(station["sponsor_name"]).strip()
+            if station["sponsor_name"]
+            else ""
+        )
+
+        public_station_name = (
+            f"{sponsor_name} {station['display_name']}"
+            if sponsor_name
+            else station["display_name"]
+        )
+
+
+        # -------------------------------------------------
+        # FIND + RESERVE EXACT DOCK
+        # -------------------------------------------------
+
+        cursor.execute("""
+            SELECT
+                slot_id,
+                slot_number
+
+            FROM slots
+
+            WHERE
+                station_id = ?
+                AND status = 'Available'
+                AND bike_id IS NULL
+
+            ORDER BY slot_number
+
+            LIMIT 1
+        """, (
+            station_id,
+        ))
+
+
+        slot = cursor.fetchone()
+
+
+        if slot is None:
+
+            connection.rollback()
+
+            return jsonify({
+                "success": False,
+                "message":
+                    f"No return docks are available at {public_station_name}."
+            }), 409
+
+
+        cursor.execute("""
+            UPDATE slots
+
+            SET
+                bike_id = ?,
+                status = 'Reserved'
+
+            WHERE
+                slot_id = ?
+                AND station_id = ?
+                AND status = 'Available'
+                AND bike_id IS NULL
+        """, (
+            bike_id,
+            slot["slot_id"],
+            station_id,
+        ))
+
+
+        if cursor.rowcount != 1:
+
+            connection.rollback()
+
+            return jsonify({
+                "success": False,
+                "message": "That dock was just taken. Please try again."
+            }), 409
+
+
+        connection.commit()
+
+
+        return jsonify({
+            "success": True,
+            "already_reserved": False,
+            "reservation": {
+                "bike_id": bike_id,
+                "station_id": station_id,
+                "station": public_station_name,
+                "slot": slot["slot_number"],
+            }
+        })
+
+
+    except Exception as error:
+
+        connection.rollback()
+
+        print(
+            "Reserve return dock error:",
+            error
+        )
+
+        return jsonify({
+            "success": False,
+            "message": "Could not reserve a return dock."
+        }), 500
+
+
+    finally:
+        connection.close()
+
+
+# =========================================================
+# CANCEL STUDENT RETURN DOCK RESERVATION
+# =========================================================
+
+@mobile_api.route(
+    "/cancel-return-slot",
+    methods=["POST"]
+)
+def cancel_return_slot():
+
+    data = request.get_json(silent=True) or {}
+
+    student_id = str(
+        data.get("student_id", "")
+    ).strip().upper()
+
+
+    if not student_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Student ID is missing."
+        }), 400
+
+
+    connection = get_db()
+    cursor = connection.cursor()
+
+
+    try:
+
+        cursor.execute("BEGIN IMMEDIATE")
+
+
+        cursor.execute("""
+            SELECT
+                r.bike_id,
+                b.status AS bike_status,
+                b.current_user
+
+            FROM rides r
+
+            JOIN bikes b
+                ON b.bike_id = r.bike_id
+
+            WHERE
+                r.student_id = ?
+                AND r.returned_at IS NULL
+
+            ORDER BY r.ride_id DESC
+
+            LIMIT 1
+        """, (
+            student_id,
+        ))
+
+
+        ride = cursor.fetchone()
+
+
+        if ride is None:
+
+            connection.rollback()
+
+            return jsonify({
+                "success": False,
+                "message": "You do not have an active ride."
+            }), 409
+
+
+        if (
+            ride["bike_status"] != "In use"
+            or ride["current_user"] != student_id
+        ):
+
+            connection.rollback()
+
+            return jsonify({
+                "success": False,
+                "message": "The active bike is not assigned correctly."
+            }), 409
+
+
+        cursor.execute("""
+            SELECT
+                slot_id,
+                station_id,
+                slot_number
+
+            FROM slots
+
+            WHERE
+                bike_id = ?
+                AND status = 'Reserved'
+
+            ORDER BY slot_id
+
+            LIMIT 1
+        """, (
+            ride["bike_id"],
+        ))
+
+
+        reservation = cursor.fetchone()
+
+
+        if reservation is None:
+
+            connection.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "No return dock reservation was active."
+            })
+
+
+        cursor.execute("""
+            UPDATE slots
+
+            SET
+                bike_id = NULL,
+                status = 'Available'
+
+            WHERE
+                slot_id = ?
+                AND bike_id = ?
+                AND status = 'Reserved'
+        """, (
+            reservation["slot_id"],
+            ride["bike_id"],
+        ))
+
+
+        if cursor.rowcount != 1:
+
+            connection.rollback()
+
+            return jsonify({
+                "success": False,
+                "message": "The return dock reservation changed. Please refresh."
+            }), 409
+
+
+        connection.commit()
+
+
+        return jsonify({
+            "success": True,
+            "message": "Return dock reservation cancelled."
+        })
+
+
+    except Exception as error:
+
+        connection.rollback()
+
+        print(
+            "Cancel return dock error:",
+            error
+        )
+
+        return jsonify({
+            "success": False,
+            "message": "Could not cancel the return dock reservation."
+        }), 500
+
+
+    finally:
+        connection.close()
+
+
+# =========================================================
 # END RIDE / RETURN BIKE
 # =========================================================
 
@@ -1075,6 +1656,10 @@ def end_ride():
     ).strip().upper()
 
     station_id = data.get("station_id")
+
+    requested_slot = str(
+        data.get("slot_number", "")
+    ).strip().upper()
 
 
     if not student_id:
@@ -1272,30 +1857,169 @@ def end_ride():
 
 
         # -------------------------------------------------
-        # AUTOMATICALLY FIND FIRST FREE SLOT
-        # USING PERMANENT station_id
+        # USE THE STUDENT'S RESERVED DOCK WHEN PRESENT
+        # -------------------------------------------------
+        #
+        # New mobile flow:
+        # GPS check -> reserve exact dock -> student sees
+        # Dock 03 -> student docks -> confirm.
+        #
+        # Old callers are still supported: when no student
+        # reservation exists, the backend can atomically
+        # take the first free dock as before.
         # -------------------------------------------------
 
-        cursor.execute("""
-            SELECT
-                slot_id,
-                slot_number
-
-            FROM slots
-
-            WHERE station_id = ?
-              AND status = 'Available'
-              AND bike_id IS NULL
-
-            ORDER BY slot_number
-
-            LIMIT 1
-        """, (
-            station_id,
-        ))
+        slot = None
 
 
-        slot = cursor.fetchone()
+        if requested_slot:
+
+            cursor.execute("""
+                SELECT
+                    slot_id,
+                    slot_number,
+                    status,
+                    bike_id
+
+                FROM slots
+
+                WHERE
+                    station_id = ?
+                    AND slot_number = ?
+                    AND status = 'Reserved'
+                    AND bike_id = ?
+
+                LIMIT 1
+            """, (
+                station_id,
+                requested_slot,
+                bike_id,
+            ))
+
+            slot = cursor.fetchone()
+
+
+            if slot is None:
+
+                connection.rollback()
+
+                return jsonify({
+                    "success": False,
+                    "message":
+                        "The assigned return dock is no longer reserved for this bike. Please refresh and request a dock again."
+                }), 409
+
+
+        else:
+
+            # Recover reservation even if an older mobile
+            # client omitted slot_number.
+            cursor.execute("""
+                SELECT
+                    slot_id,
+                    slot_number,
+                    status,
+                    bike_id
+
+                FROM slots
+
+                WHERE
+                    station_id = ?
+                    AND status = 'Reserved'
+                    AND bike_id = ?
+
+                ORDER BY slot_id
+
+                LIMIT 1
+            """, (
+                station_id,
+                bike_id,
+            ))
+
+            slot = cursor.fetchone()
+
+
+        if slot is None:
+
+            # If this bike has a reservation at a different
+            # station, do not silently leave it stuck there.
+            cursor.execute("""
+                SELECT
+                    sl.station_id,
+                    sl.slot_number,
+
+                    COALESCE(
+                        NULLIF(TRIM(s.display_name), ''),
+                        s.station_name
+                    ) AS display_name,
+
+                    s.sponsor_name
+
+                FROM slots sl
+
+                JOIN stations s
+                    ON s.station_id = sl.station_id
+
+                WHERE
+                    sl.bike_id = ?
+                    AND sl.status = 'Reserved'
+
+                ORDER BY sl.slot_id
+
+                LIMIT 1
+            """, (
+                bike_id,
+            ))
+
+            other_reservation = cursor.fetchone()
+
+
+            if other_reservation:
+
+                other_sponsor = (
+                    str(other_reservation["sponsor_name"]).strip()
+                    if other_reservation["sponsor_name"]
+                    else ""
+                )
+
+                other_name = (
+                    f"{other_sponsor} {other_reservation['display_name']}"
+                    if other_sponsor
+                    else other_reservation["display_name"]
+                )
+
+                connection.rollback()
+
+                return jsonify({
+                    "success": False,
+                    "message":
+                        f"This bike already has {other_reservation['slot_number']} reserved at {other_name}."
+                }), 409
+
+
+            # Backward-compatible fallback.
+            cursor.execute("""
+                SELECT
+                    slot_id,
+                    slot_number,
+                    status,
+                    bike_id
+
+                FROM slots
+
+                WHERE
+                    station_id = ?
+                    AND status = 'Available'
+                    AND bike_id IS NULL
+
+                ORDER BY slot_number
+
+                LIMIT 1
+            """, (
+                station_id,
+            ))
+
+            slot = cursor.fetchone()
 
 
         if slot is None:
@@ -1318,22 +2042,44 @@ def end_ride():
         # OCCUPY RETURN SLOT
         # -------------------------------------------------
 
-        cursor.execute("""
-            UPDATE slots
+        if slot["status"] == "Reserved":
 
-            SET
-                bike_id = ?,
-                status = 'Occupied'
+            cursor.execute("""
+                UPDATE slots
 
-            WHERE slot_id = ?
-              AND station_id = ?
-              AND status = 'Available'
-              AND bike_id IS NULL
-        """, (
-            bike_id,
-            slot["slot_id"],
-            station_id,
-        ))
+                SET
+                    status = 'Occupied'
+
+                WHERE
+                    slot_id = ?
+                    AND station_id = ?
+                    AND status = 'Reserved'
+                    AND bike_id = ?
+            """, (
+                slot["slot_id"],
+                station_id,
+                bike_id,
+            ))
+
+        else:
+
+            cursor.execute("""
+                UPDATE slots
+
+                SET
+                    bike_id = ?,
+                    status = 'Occupied'
+
+                WHERE
+                    slot_id = ?
+                    AND station_id = ?
+                    AND status = 'Available'
+                    AND bike_id IS NULL
+            """, (
+                bike_id,
+                slot["slot_id"],
+                station_id,
+            ))
 
 
         if cursor.rowcount != 1:
@@ -1342,7 +2088,7 @@ def end_ride():
 
             return jsonify({
                 "success": False,
-                "message": "That slot was just taken. Please try again."
+                "message": "The assigned dock changed. Please try again."
             }), 409
 
 
