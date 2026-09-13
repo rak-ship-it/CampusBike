@@ -601,6 +601,10 @@ def rent_bike():
     try:
 
         # =================================================
+        # Serialize the active-ride check and rental writes together.
+        # Two simultaneous requests must not rent two bikes to one student.
+        cursor.execute("BEGIN IMMEDIATE")
+
         # VERIFY STUDENT
         # =================================================
 

@@ -535,7 +535,7 @@ export default function HelpScreen() {
           {/* ISSUE */}
 
           <Text style={styles.sectionLabel}>
-            WHAT'S WRONG?
+            WHAT&apos;S WRONG?
           </Text>
 
 

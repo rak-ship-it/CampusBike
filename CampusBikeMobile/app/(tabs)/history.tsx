@@ -368,7 +368,7 @@ export default function HistoryScreen() {
 
 
             <Text style={styles.emptyTitle}>
-              Couldn't load history
+              Couldn&apos;t load history
             </Text>
 
 

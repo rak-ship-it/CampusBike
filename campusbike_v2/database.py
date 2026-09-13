@@ -1122,6 +1122,11 @@ def initialize_database(
 
             WHERE bike_id IS NOT NULL
 
+              -- Reserved docks describe a pending return/movement, not
+              -- the bike's current parking position. Never clear them
+              -- merely because the bike is on a ride or in transit.
+              AND status != 'Reserved'
+
               AND NOT EXISTS (
 
                   SELECT 1
@@ -1201,6 +1206,11 @@ def initialize_database(
 
             current_slot = bike[3]
 
+            # Rebalancing is completed/cancelled explicitly by the admin.
+            # Startup must never teleport an in-transit bike to a dock.
+            if status == "Rebalancing":
+                continue
+
 
             # =============================================
             # CHECK MAINTENANCE REPORTS
@@ -1237,7 +1247,7 @@ def initialize_database(
 
             if status == "In use":
 
-                # A bike being ridden must not occupy a slot.
+                # A bike being ridden may reserve, but not occupy, a slot.
 
                 cursor.execute(
                     """
@@ -1248,6 +1258,7 @@ def initialize_database(
                         status = 'Available'
 
                     WHERE bike_id = ?
+                      AND status != 'Reserved'
                     """,
                     (
                         bike_id,
@@ -1615,6 +1626,33 @@ def initialize_database(
                 ),
             )
 
+
+        # =================================================
+        # COMPLETE REFERENCES AFTER SEEDING/PARKING
+        # =================================================
+        # The earlier migration runs before new rows are created. Finish
+        # these relationships here so a fresh database works on first boot.
+
+        cursor.execute("""
+            UPDATE stations SET station_code = printf('STN%03d', station_id)
+            WHERE station_code IS NULL OR TRIM(station_code) = ''
+        """)
+        cursor.execute("""
+            UPDATE stations SET display_name = station_name
+            WHERE display_name IS NULL OR TRIM(display_name) = ''
+        """)
+        cursor.execute("""
+            UPDATE slots SET station_id = (
+                SELECT station_id FROM stations
+                WHERE stations.station_name = slots.station_name
+            ) WHERE station_id IS NULL
+        """)
+        cursor.execute("""
+            UPDATE bikes SET station_id = (
+                SELECT station_id FROM stations
+                WHERE stations.station_name = bikes.station
+            )
+        """)
 
         # =================================================
         # KEEP TOTAL RIDES CORRECT

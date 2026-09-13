@@ -88,3 +88,34 @@ Camera access requires HTTPS (or localhost) and browser permission. GitHub Codes
 ## Production note
 
 This is a production-style web architecture, but a real physical dock/lock requires a separate hardware controller/API. The current `lock_status` is software state only. Before a real campus launch, move from SQLite to PostgreSQL, add deployment monitoring/backups, rotate QR secrets when needed, and integrate the physical lock controller.
+
+## Mobile exact-dock return and automated checks
+
+The Expo app now reserves a numbered dock after its phone GPS check. The
+ride remains active until the prototype confirmation button completes the
+return. Refreshing the app or restarting Flask preserves the reservation.
+Cancelling the assignment frees the dock without ending the ride. Admin
+rebalancing reservations also survive restarts; completion/cancellation stays
+an explicit admin action.
+
+Run the backend regression suite from the repository root:
+
+```bash
+python -m pip install -r campusbike_v2/requirements.txt
+python -m unittest discover -s campusbike_v2/tests -v
+```
+
+Tests use disposable databases, including during Flask import. They cover
+first-boot setup, exact returns/history, restart recovery, cancellation,
+full/inactive stations, maintenance returns, simultaneous rentals for one
+student, and admin rebalancing completion/cancellation after restart.
+
+Mobile checks (inside `CampusBikeMobile`): `npm ci`, `npx tsc --noEmit`,
+`npm run lint`, and `npx expo export --platform android`.
+An export verifies bundling, not real device operation. Camera permissions,
+phone GPS and physical locking still need device/hardware validation.
+
+Known prototype limits: mobile identity is still supplied as a student ID;
+GPS is checked by the app, not the API; the legacy return API still supports
+callers without prior reservations. Reservations do not expire automatically.
+Resolve authentication and reservation lifecycle rules before a real pilot.
