@@ -752,6 +752,29 @@ def initialize_database(
         connection.commit()
 
 
+        add_column_if_missing(cursor, "students", "password_hash", "TEXT")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS mobile_sessions (
+                token_hash TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                expires_at INTEGER NOT NULL,
+                kind TEXT NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_mobile_sessions_student
+            ON mobile_sessions(student_id)
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS mobile_login_attempts (
+                student_id TEXT PRIMARY KEY,
+                failures INTEGER NOT NULL,
+                window_start INTEGER NOT NULL
+            )
+        """)
+        connection.commit()
+
         # =================================================
         # DEFAULT CAMPUS
         # =================================================

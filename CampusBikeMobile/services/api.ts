@@ -1,2 +1,46 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import { router } from 'expo-router';
+
 export const API_BASE_URL =
   'https://effective-space-memory-5v4r5qj56jxxh7g4p-5000.app.github.dev';
+
+const TOKEN_KEY = 'campusbike_access_token';
+// Web previews deliberately keep tokens in memory, not localStorage.
+let webToken: string | null = null;
+
+export async function getToken(): Promise<string | null> {
+  return Platform.OS === 'web' ? webToken : SecureStore.getItemAsync(TOKEN_KEY);
+}
+
+export async function saveToken(token: string) {
+  if (Platform.OS === 'web') webToken = token;
+  else await SecureStore.setItemAsync(TOKEN_KEY, token);
+}
+
+export async function clearSession() {
+  if (Platform.OS === 'web') webToken = null;
+  else await SecureStore.deleteItemAsync(TOKEN_KEY);
+  await AsyncStorage.removeItem('campusbike_student');
+}
+
+export async function apiFetch(url: string, options: RequestInit = {}) {
+  if (!url.startsWith(`${API_BASE_URL}/`)) throw new Error('Invalid API destination.');
+  const token = await getToken();
+  const headers = new Headers(options.headers);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const response = await fetch(url, { ...options, headers });
+  // A delayed failure from an older session must not erase a new login.
+  if (response.status === 401 && (await getToken()) === token) {
+    await clearSession();
+    router.replace('/');
+  }
+  return response;
+}
+
+export async function logoutSession() {
+  const response = await apiFetch(`${API_BASE_URL}/api/logout`, { method: 'POST' });
+  if (!response.ok && response.status !== 401) throw new Error('Could not sign out. Try again.');
+  await clearSession();
+}

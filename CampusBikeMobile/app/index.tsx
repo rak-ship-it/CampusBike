@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Ionicons } from '@expo/vector-icons';
 
-import { API_BASE_URL } from '../services/api';
+import { API_BASE_URL, apiFetch, getToken, saveToken, clearSession } from '../services/api';
 
 
 type Student = {
@@ -31,6 +31,8 @@ type Student = {
 export default function LoginScreen() {
 
   const [studentId, setStudentId] = useState('');
+  const [password, setPassword] = useState('');
+  const [devEnabled, setDevEnabled] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -41,6 +43,10 @@ export default function LoginScreen() {
 
   useEffect(() => {
     checkExistingLogin();
+    fetch(`${API_BASE_URL}/api/auth/config`)
+      .then(response => response.json())
+      .then(data => setDevEnabled(data.dev_login_enabled === true))
+      .catch(() => setDevEnabled(false));
   }, []);
 
 
@@ -53,18 +59,16 @@ export default function LoginScreen() {
 
     try {
 
-      const savedStudent =
-        await AsyncStorage.getItem(
-          'campusbike_student'
-        );
-
-
-      if (savedStudent) {
-
-        router.replace('/(tabs)');
-
-        return;
-
+      if (await getToken()) {
+        const response = await apiFetch(`${API_BASE_URL}/api/me`);
+        if (response.ok) {
+          const data = await response.json();
+          await AsyncStorage.setItem('campusbike_student', JSON.stringify(data.student));
+          router.replace('/(tabs)');
+          return;
+        }
+      } else {
+        await clearSession();
       }
 
     } catch (error) {
@@ -87,7 +91,7 @@ export default function LoginScreen() {
   // LOGIN
   // =====================================================
 
-  async function login() {
+  async function login(development = false) {
 
     const cleanId =
       studentId.trim().toUpperCase();
@@ -111,7 +115,7 @@ export default function LoginScreen() {
     try {
 
       const response = await fetch(
-        `${API_BASE_URL}/api/dev-login`,
+        `${API_BASE_URL}/api/${development ? 'dev-login' : 'login'}`,
         {
           method: 'POST',
 
@@ -122,6 +126,7 @@ export default function LoginScreen() {
 
           body: JSON.stringify({
             student_id: cleanId,
+            password: development ? undefined : password,
           }),
         }
       );
@@ -143,6 +148,9 @@ export default function LoginScreen() {
       }
 
 
+      await saveToken(data.access_token);
+      setPassword('');
+
       const student: Student =
         data.student;
 
@@ -150,12 +158,6 @@ export default function LoginScreen() {
       await AsyncStorage.setItem(
         'campusbike_student',
         JSON.stringify(student)
-      );
-
-
-      console.log(
-        'Logged in student:',
-        student
       );
 
 
@@ -273,7 +275,7 @@ export default function LoginScreen() {
 
 
             <Text style={styles.cardDescription}>
-              Enter your registered student ID.
+              Enter your registered student ID and password.
             </Text>
 
 
@@ -325,12 +327,32 @@ export default function LoginScreen() {
 
                 returnKeyType="go"
 
-                onSubmitEditing={login}
+                onSubmitEditing={() => login()}
 
               />
 
             </View>
 
+
+            <Text style={styles.label}>PASSWORD</Text>
+            <View style={styles.inputBox}>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="current-password"
+                onSubmitEditing={() => login()}
+              />
+            </View>
+            {devEnabled && (
+              <Pressable disabled={loading} onPress={() => login(true)}>
+                <Text style={styles.cardDescription}>Development login (test accounts only)</Text>
+              </Pressable>
+            )}
 
             {error ? (
 
@@ -355,7 +377,7 @@ export default function LoginScreen() {
 
               ]}
 
-              onPress={login}
+              onPress={() => login()}
 
               disabled={loading}
 
@@ -394,7 +416,7 @@ export default function LoginScreen() {
 
 
             <Text style={styles.devNote}>
-              Developer login · Google/college verification will replace this before release.
+              Need a password or a reset? Contact your campus administrator.
             </Text>
 
           </View>

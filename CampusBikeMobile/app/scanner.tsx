@@ -23,7 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { API_BASE_URL } from '../services/api';
+import { API_BASE_URL, apiFetch } from '../services/api';
 
 
 type Student = {
@@ -132,7 +132,7 @@ export default function ScannerScreen() {
     );
 
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${API_BASE_URL}/api/rent`,
       {
         method: 'POST',
@@ -241,7 +241,7 @@ export default function ScannerScreen() {
 
 
       const identifyResponse =
-        await fetch(
+        await apiFetch(
           `${API_BASE_URL}/api/bike-by-qr`,
           {
             method: 'POST',

@@ -22,7 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as Location from 'expo-location';
 
-import { API_BASE_URL } from '../../services/api';
+import { API_BASE_URL, apiFetch } from '../../services/api';
 
 
 type Student = {
@@ -247,11 +247,11 @@ export default function RideScreen() {
         stationResponse,
       ] = await Promise.all([
 
-        fetch(
+        apiFetch(
           `${API_BASE_URL}/api/students/${studentData.student_id}/active-ride`
         ),
 
-        fetch(
+        apiFetch(
           `${API_BASE_URL}/api/stations`
         ),
 
@@ -617,7 +617,7 @@ export default function RideScreen() {
       // GPS CHECK PASSED — RESERVE AN EXACT RETURN DOCK
       // =================================================
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/api/reserve-return-slot`,
         {
           method: 'POST',
@@ -724,7 +724,7 @@ export default function RideScreen() {
 
     try {
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/api/end-ride`,
         {
           method: 'POST',
@@ -820,7 +820,7 @@ export default function RideScreen() {
 
     try {
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/api/cancel-return-slot`,
         {
           method: 'POST',

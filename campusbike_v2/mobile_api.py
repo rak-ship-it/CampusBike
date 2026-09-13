@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 import sqlite3
 import os
 
@@ -86,87 +86,6 @@ def health():
         "service": "CampusBike Mobile API"
     })
 
-
-# =========================================================
-# DEVELOPER LOGIN
-# =========================================================
-
-@mobile_api.route(
-    "/dev-login",
-    methods=["POST"]
-)
-def dev_login():
-
-    data = request.get_json(silent=True) or {}
-
-    student_id = str(
-        data.get("student_id", "")
-    ).strip().upper()
-
-
-    if not student_id:
-
-        return jsonify({
-            "success": False,
-            "message": "Student ID is required."
-        }), 400
-
-
-    connection = get_db()
-
-    cursor = connection.cursor()
-
-
-    cursor.execute("""
-        SELECT
-            student_id,
-            name,
-            email,
-            active
-        FROM students
-        WHERE student_id = ?
-    """, (
-        student_id,
-    ))
-
-
-    student = cursor.fetchone()
-
-    connection.close()
-
-
-    if student is None:
-
-        return jsonify({
-            "success": False,
-            "message": "Student not found."
-        }), 404
-
-
-    if student["active"] != 1:
-
-        return jsonify({
-            "success": False,
-            "message": "Student account is inactive."
-        }), 403
-
-
-    return jsonify({
-
-        "success": True,
-
-        "student": {
-            "student_id": student["student_id"],
-            "name": student["name"],
-            "email": student["email"]
-        }
-
-    })
-
-
-# =========================================================
-# CAMPUSES
-# =========================================================
 
 @mobile_api.route("/campuses")
 def get_campuses():
@@ -550,9 +469,7 @@ def rent_bike():
     data = request.get_json(silent=True) or {}
 
 
-    student_id = str(
-        data.get("student_id", "")
-    ).strip().upper()
+    student_id = g.student_id
 
 
     bike_id = str(
@@ -1147,9 +1064,7 @@ def reserve_return_slot():
 
     data = request.get_json(silent=True) or {}
 
-    student_id = str(
-        data.get("student_id", "")
-    ).strip().upper()
+    student_id = g.student_id
 
     station_id = data.get("station_id")
 
@@ -1484,9 +1399,7 @@ def cancel_return_slot():
 
     data = request.get_json(silent=True) or {}
 
-    student_id = str(
-        data.get("student_id", "")
-    ).strip().upper()
+    student_id = g.student_id
 
 
     if not student_id:
@@ -1655,9 +1568,7 @@ def end_ride():
 
     data = request.get_json(silent=True) or {}
 
-    student_id = str(
-        data.get("student_id", "")
-    ).strip().upper()
+    student_id = g.student_id
 
     station_id = data.get("station_id")
 
@@ -2338,9 +2249,7 @@ def create_maintenance_report():
 
     data = request.get_json(silent=True) or {}
 
-    student_id = str(
-        data.get("student_id", "")
-    ).strip().upper()
+    student_id = g.student_id
 
     bike_id = str(
         data.get("bike_id", "")
@@ -2654,3 +2563,8 @@ def create_maintenance_report():
     finally:
 
         connection.close()
+
+
+from mobile_auth import register_mobile_auth
+
+register_mobile_auth(mobile_api, get_db)

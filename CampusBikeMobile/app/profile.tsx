@@ -1,6 +1,8 @@
+import { logoutSession } from '../services/api';
 import { useEffect, useState } from 'react';
 
 import {
+  Alert,
   SafeAreaView,
   View,
   Text,
@@ -76,11 +78,12 @@ export default function ProfileScreen() {
 
   async function logout() {
 
-    await AsyncStorage.removeItem(
-      'campusbike_student'
-    );
-
-    router.replace('/');
+    try {
+      await logoutSession();
+      router.replace('/');
+    } catch {
+      Alert.alert('Could not sign out', 'Check your connection and try again.');
+    }
 
   }
 

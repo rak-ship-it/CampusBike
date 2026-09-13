@@ -19,7 +19,7 @@ import {
 import AsyncStorage
   from '@react-native-async-storage/async-storage';
 
-import { API_BASE_URL }
+import { API_BASE_URL, apiFetch }
   from '../../services/api';
 
 
@@ -132,11 +132,11 @@ export default function HelpScreen() {
         activeRideResponse,
       ] = await Promise.all([
 
-        fetch(
+        apiFetch(
           `${API_BASE_URL}/api/stations`
         ),
 
-        fetch(
+        apiFetch(
           `${API_BASE_URL}/api/students/${studentData.student_id}/active-ride`
         ),
 
@@ -294,7 +294,7 @@ export default function HelpScreen() {
     try {
 
       const response =
-        await fetch(
+        await apiFetch(
           `${API_BASE_URL}/api/maintenance-reports`,
           {
             method: 'POST',

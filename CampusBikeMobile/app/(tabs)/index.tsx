@@ -36,7 +36,7 @@ import { SafeAreaView } from
   'react-native-safe-area-context';
 
 import {
-  API_BASE_URL,
+  API_BASE_URL, apiFetch,
 } from '../../services/api';
 
 
@@ -450,7 +450,7 @@ export default function MapScreen() {
            */
 
           const response =
-            await fetch(
+            await apiFetch(
               `${API_BASE_URL}/api/stations?t=${Date.now()}`
             );
 
@@ -610,7 +610,7 @@ export default function MapScreen() {
         try {
 
           const response =
-            await fetch(
+            await apiFetch(
               `${API_BASE_URL}/api/campus-boundary?t=${Date.now()}`
             );
 

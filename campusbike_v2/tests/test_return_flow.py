@@ -15,12 +15,14 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import database
 import mobile_api
+from werkzeug.security import generate_password_hash
 
 
-class ReturnFlowTests(unittest.TestCase):
+class FlowTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # app.py initializes on import: redirect even that first write.
+        cls.password_hash = generate_password_hash('test-password-for-suite')
         cls.boot = tempfile.TemporaryDirectory()
         initialize = database.initialize_database
         with patch.object(database, 'DB_NAME', cls.boot.name + '/boot.db'), patch.object(
@@ -42,7 +44,13 @@ class ReturnFlowTests(unittest.TestCase):
             patcher = patch.object(module, 'DB_NAME', self.path)
             patcher.start()
             self.addCleanup(patcher.stop)
+        with sqlite3.connect(self.path) as db:
+            db.execute('UPDATE students SET password_hash=?', (self.password_hash,))
         self.client = self.web.app.test_client()
+        login = self.client.post('/api/login', json={'student_id': 'STU001', 'password': 'test-password-for-suite'})
+        self.assertEqual(login.status_code, 200, login.json)
+        self.token = login.json['access_token']
+        self.client.environ_base['HTTP_AUTHORIZATION'] = 'Bearer ' + self.token
         with self.client.session_transaction() as session:
             session['admin_logged_in'] = True
             session['admin_username'] = 'test-admin'
@@ -67,6 +75,8 @@ class ReturnFlowTests(unittest.TestCase):
     def active(self):
         return self.client.get('/api/students/STU001/active-ride').json['active_ride']
 
+
+class ReturnFlowTests(FlowTestCase):
     def test_first_boot_rent_reserve_restart_confirm_history(self):
         self.post('rent', self.rent_payload())
         reservation = self.reserve()
@@ -123,7 +133,7 @@ class ReturnFlowTests(unittest.TestCase):
         def rent(payload):
             with self.web.app.test_client() as client:
                 barrier.wait(timeout=5)
-                return client.post('/api/rent', json=payload).status_code
+                return client.post('/api/rent', json=payload, headers={'Authorization': 'Bearer ' + self.token}).status_code
         with ThreadPoolExecutor(max_workers=2) as pool:
             self.assertEqual(sorted(pool.map(rent, payloads)), [200, 409])
         self.assertEqual(len(self.query('SELECT * FROM rides WHERE returned_at IS NULL')), 1)

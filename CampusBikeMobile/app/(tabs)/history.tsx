@@ -19,7 +19,7 @@ import {
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { API_BASE_URL } from '../../services/api';
+import { API_BASE_URL, apiFetch } from '../../services/api';
 
 
 type Student = {
@@ -101,7 +101,7 @@ export default function HistoryScreen() {
       setStudent(studentData);
 
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/api/students/${studentData.student_id}/rides`
       );
 
