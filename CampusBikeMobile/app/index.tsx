@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Ionicons } from '@expo/vector-icons';
 
-import { API_BASE_URL, apiFetch, getToken, saveToken, clearSession } from '../services/api';
+import { API_BASE_URL, apiFetch, getToken, saveToken, clearSession, fetchWithTimeout } from '../services/api';
 
 
 type Student = {
@@ -43,7 +43,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     checkExistingLogin();
-    fetch(`${API_BASE_URL}/api/auth/config`)
+    fetchWithTimeout(`${API_BASE_URL}/api/auth/config`)
       .then(response => response.json())
       .then(data => setDevEnabled(data.dev_login_enabled === true))
       .catch(() => setDevEnabled(false));
@@ -118,7 +118,7 @@ export default function LoginScreen() {
 
     try {
 
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${API_BASE_URL}/api/${development ? 'dev-login' : 'login'}`,
         {
           method: 'POST',

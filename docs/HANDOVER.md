@@ -32,7 +32,7 @@ formal migrations is a future engineering task, not hidden completed work.
 
 | Capability | Release status |
 |---|---|
-| Mobile password login / admin account tools | Implemented and automatically tested |
+| Mobile password login / own-password change / admin account tools | Implemented and automatically tested |
 | QR rent / exact dock return / personal history | Implemented; backend flow tested |
 | GPS validation on server / campus polygon | Implemented using phone-supplied readings |
 | Reservation expiry, restart recovery, retry receipt | Implemented and tested |
@@ -43,7 +43,7 @@ formal migrations is a future engineering task, not hidden completed work.
 | Physical docking / bike identity sensor / LED control | Not built |
 | Background bike GPS / journey-distance tracking | Not built |
 | Full tenant isolation / PostgreSQL migration | Not built |
-| Mobile Google sign-in / self-service password reset | Not built |
+| Mobile Google sign-in / forgotten-password self-service recovery | Not built |
 | Hosted service / APK or IPA signing / app-store release | Not delivered |
 | Payments / sponsor billing / commercial analytics | Not built |
 

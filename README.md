@@ -1,4 +1,4 @@
-# CampusBike — software MVP 1.0.0
+# CampusBike — software MVP 1.0.1
 
 **Bike simple, station smart.**
 

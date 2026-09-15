@@ -2483,15 +2483,15 @@ def admin_login():
 
             bool(ADMIN_PASSWORD)
             and hmac.compare_digest(
-                username,
-                ADMIN_USERNAME,
+                username.encode("utf-8"),
+                ADMIN_USERNAME.encode("utf-8"),
             )
 
             and
 
             hmac.compare_digest(
-                password,
-                ADMIN_PASSWORD,
+                password.encode("utf-8"),
+                ADMIN_PASSWORD.encode("utf-8"),
             )
 
         ):

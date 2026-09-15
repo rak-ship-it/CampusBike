@@ -48,6 +48,7 @@ def register_mobile_auth(blueprint, get_db):
         g.student_id = row['student_id']
         g.mobile_student = {key: row[key] for key in ('student_id', 'name', 'email')}
         g.mobile_token_hash = digest
+        g.mobile_session_kind = row['kind']
         # Old clients may still send IDs. Reject mismatches before any action.
         identities = [request.view_args.get('student_id')] if request.view_args else []
         identities.extend(request.args.getlist('student_id'))
@@ -126,3 +127,34 @@ def register_mobile_auth(blueprint, get_db):
             db.execute('DELETE FROM mobile_sessions WHERE token_hash=?', (g.mobile_token_hash,))
             db.commit()
         return jsonify(success=True)
+
+
+    @blueprint.route('/change-password', methods=['POST'])
+    def change_password():
+        if g.mobile_session_kind != 'password':
+            return error('Sign in with your password before changing it.', 403)
+        data=request.get_json(silent=True) or {}
+        current=data.get('current_password')
+        replacement=data.get('new_password')
+        if not isinstance(current,str) or len(current)>1024 or not isinstance(replacement,str) or not 12<=len(replacement)<=128:
+            return error('Use your current password and a new password of 12–128 characters.',400)
+        if current == replacement:
+            return error('Choose a different new password.',400)
+        now=int(time.time())
+        with closing(get_db()) as db:
+            db.execute('BEGIN IMMEDIATE')
+            db.execute('DELETE FROM mobile_login_attempts WHERE window_start < ?', (now-900,))
+            attempt=db.execute('SELECT failures FROM mobile_login_attempts WHERE student_id=?',(g.student_id,)).fetchone()
+            if attempt and attempt['failures']>=5:
+                db.commit()
+                return error('Too many attempts. Try again in 15 minutes.',429)
+            row=db.execute('SELECT password_hash FROM students WHERE student_id=?',(g.student_id,)).fetchone()
+            if not row or not row['password_hash'] or not check_password_hash(row['password_hash'],current):
+                db.execute('INSERT INTO mobile_login_attempts VALUES (?,1,?) ON CONFLICT(student_id) DO UPDATE SET failures=failures+1',(g.student_id,now))
+                db.commit()
+                return error('Current password is incorrect.',403)
+            db.execute('UPDATE students SET password_hash=? WHERE student_id=?',(generate_password_hash(replacement),g.student_id))
+            db.execute('DELETE FROM mobile_sessions WHERE student_id=?',(g.student_id,))
+            db.execute('DELETE FROM mobile_login_attempts WHERE student_id=?',(g.student_id,))
+            db.commit()
+        return jsonify(success=True,message='Password changed. Sign in again on each device.')

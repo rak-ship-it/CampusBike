@@ -69,3 +69,38 @@ class MobileAuthTests(FlowTestCase):
         self.assertEqual(self.client.post('/api/login',json=[]).status_code,400)
         self.assertEqual(self.client.post('/api/end-ride',json=[]).status_code,400)
         self.assertEqual(self.client.get('/api/me').headers['Cache-Control'],'no-store')
+
+    def test_self_password_change_revokes_every_session_and_preserves_ride(self):
+        self.post('rent', self.rent_payload())
+        before = self.query('SELECT * FROM rides')
+        other = self.web.app.test_client()
+        login = other.post('/api/login', json={'student_id':'STU001','password':'test-password-for-suite'})
+        other.environ_base['HTTP_AUTHORIZATION'] = 'Bearer ' + login.json['access_token']
+        response = self.client.post('/api/change-password', json={'current_password':'test-password-for-suite','new_password':'replacement-password-123'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get('/api/me').status_code, 401)
+        self.assertEqual(other.get('/api/me').status_code, 401)
+        self.assertEqual(self.query('SELECT * FROM rides'), before)
+        self.assertEqual(other.post('/api/login', json={'student_id':'STU001','password':'test-password-for-suite'}).status_code, 401)
+        self.assertEqual(other.post('/api/login', json={'student_id':'STU001','password':'replacement-password-123'}).status_code, 200)
+
+    def test_password_change_validation_and_throttle(self):
+        before = self.query('SELECT password_hash FROM students')
+        for value in ([], {}, {'current_password':'test-password-for-suite','new_password':'short'}, {'current_password':'test-password-for-suite','new_password':'test-password-for-suite'}):
+            self.assertEqual(self.client.post('/api/change-password', json=value).status_code, 400)
+        for _ in range(5):
+            self.assertEqual(self.client.post('/api/change-password', json={'current_password':'wrong','new_password':'replacement-password-123'}).status_code, 403)
+        self.assertEqual(self.client.post('/api/change-password', json={'current_password':'test-password-for-suite','new_password':'replacement-password-123'}).status_code, 429)
+        self.assertEqual(self.query('SELECT password_hash FROM students'), before)
+        self.assertEqual(self.client.get('/api/me').status_code, 200)
+
+    def test_dev_session_cannot_change_password(self):
+        with patch.dict(os.environ, {'CAMPUSBIKE_DEV_LOGIN':'1'}):
+            login = self.client.post('/api/dev-login', json={'student_id':'STU001'})
+            response = self.client.post('/api/change-password', headers={'Authorization':'Bearer '+login.json['access_token']}, json={'current_password':'test-password-for-suite','new_password':'replacement-password-123'})
+            self.assertEqual(response.status_code, 403)
+
+    def test_non_ascii_admin_credentials_do_not_crash(self):
+        with patch.object(self.web, 'ADMIN_PASSWORD', 'administrator-password'):
+            response = self.web.app.test_client().post('/admin/login', data={'username':'élève','password':'mot-de-passe-é'})
+            self.assertLess(response.status_code, 500)

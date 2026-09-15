@@ -25,13 +25,28 @@ export async function clearSession() {
   await AsyncStorage.removeItem('campusbike_student');
 }
 
+export async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (options.signal?.aborted) abort();
+  else options.signal?.addEventListener('abort', abort, { once: true });
+  const timer = setTimeout(abort, timeoutMs);
+  try {
+    // Never automatically retry writes: a timeout can follow a committed write.
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', abort);
+  }
+}
+
 export async function apiFetch(url: string, options: RequestInit = {}) {
   if (!API_BASE_URL) throw new Error('Configure EXPO_PUBLIC_API_BASE_URL before starting Expo.');
   if (!url.startsWith(`${API_BASE_URL}/`)) throw new Error('Invalid API destination.');
   const token = await getToken();
   const headers = new Headers(options.headers);
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetchWithTimeout(url, { ...options, headers });
   // A delayed failure from an older session must not erase a new login.
   if (response.status === 401 && (await getToken()) === token) {
     await clearSession();

@@ -253,6 +253,13 @@ export default function ProfileScreen() {
         {/* LOGOUT */}
 
         <Pressable
+          style={{ paddingVertical: 16, alignItems: 'center' }}
+          onPress={() => router.push('/change-password')}
+        >
+          <Text style={{ color: '#E63946', fontWeight: '700' }}>Change password</Text>
+        </Pressable>
+
+        <Pressable
           style={styles.logoutButton}
           onPress={logout}
         >

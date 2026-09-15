@@ -1,3 +1,15 @@
+# Software MVP patch 1.0.1 — 2026-09-15
+
+- Profile now offers a password-change screen requiring the current password.
+  Successful changes revoke all sessions and preserve rides. Forgotten passwords
+  still require an administrator reset; development sessions cannot change them.
+- Mobile requests abort after 15 seconds waiting for response headers, respect
+  caller cancellation, and never automatically retry writes. After an uncertain
+  return, reload My Ride; after an uncertain password change, try the new password.
+- Admin credential comparison accepts UTF-8 input without a server exception.
+- Verification: 28 backend tests and six mocked client tests pass, along with
+  TypeScript and Expo lint. Android and iOS JavaScript/Hermes bundle exports also passed; these are not signed installers.
+
 # Software MVP release 1.0.0 — 2026-09-15
 
 This is a reproducible software handover checkpoint. It does not assert complete

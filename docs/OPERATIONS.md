@@ -83,3 +83,11 @@ demo. Use a fresh seeded database with separately provisioned test passwords.
 Admin login is limited to ten POST attempts per source address per 15-minute
 window. A reverse proxy may make addresses shared; configure a gateway rate
 limit deliberately rather than trusting arbitrary forwarded-IP headers.
+
+## Student password changes
+
+Students who know their password can use Profile → Change password. This signs
+out all their devices without deleting history or ending an active ride. Forgotten
+passwords still require the administrator's identity-verification/reset process.
+A timeout does not prove a write failed: refresh My Ride after an uncertain return;
+try the new password at login after an uncertain password change.

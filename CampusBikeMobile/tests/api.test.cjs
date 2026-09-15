@@ -9,7 +9,7 @@ const compiled = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../ser
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
 }).outputText;
 
-function setup(platform = 'android') {
+function setup(platform = 'android', fetchMock) {
   const storage = new Map();
   const redirects = [];
   const calls = [];
@@ -27,10 +27,11 @@ function setup(platform = 'android') {
     'expo-router': { router: { replace: route => redirects.push(route) } }
   };
   const context = {
-    exports: {}, Headers, Error, process: { env: { EXPO_PUBLIC_API_BASE_URL: 'https://campusbike.example' } },
+    exports: {}, Headers, Error, AbortController, setTimeout, clearTimeout, process: { env: { EXPO_PUBLIC_API_BASE_URL: 'https://campusbike.example' } },
     require: name => { assert.ok(modules[name], name); return modules[name]; },
     fetch: async (url, options) => {
       calls.push({ url, options });
+      if (fetchMock) return fetchMock(url, options);
       return { status, ok: status >= 200 && status < 300 };
     }
   };
@@ -81,4 +82,28 @@ test('web preview credentials stay in memory', async () => {
   assert.equal(storage.size, 0);
   await api.clearSession();
   assert.equal(await api.getToken(), null);
+});
+
+function pendingFetch(url, options) {
+  return new Promise((resolve, reject) => {
+    if (options.signal.aborted) return reject(new Error('aborted'));
+    options.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+  });
+}
+
+test('timeout aborts a stalled write without retries or deleting credentials', async () => {
+  const { api, calls } = setup('android', pendingFetch);
+  await api.saveToken('valid');
+  await assert.rejects(api.fetchWithTimeout(api.API_BASE_URL + '/api/end-ride', { method: 'POST' }, 10), /aborted/);
+  assert.equal(calls.length, 1);
+  assert.equal(await api.getToken(), 'valid');
+});
+
+test('caller cancellation is forwarded to the request', async () => {
+  const { api, calls } = setup('android', pendingFetch);
+  const controller = new AbortController();
+  const result = api.fetchWithTimeout(api.API_BASE_URL + '/api/me', { signal: controller.signal });
+  controller.abort();
+  await assert.rejects(result, /aborted/);
+  assert.equal(calls[0].options.signal.aborted, true);
 });

@@ -67,3 +67,14 @@ failed—refresh/read the ride state or retry the same ride-specific request.
 
 Timestamps in ride history are legacy IST strings; token/lease expiries use Unix
 seconds. GPS timestamps use Unix milliseconds. Keep these units distinct.
+
+## Change own password
+
+`POST /api/change-password` requires a password-authenticated bearer session and
+JSON `current_password`, `new_password`. The new password must differ and contain
+12–128 characters. Success returns `success: true` and revokes all sessions for
+that student; sign in again. Rides and history remain unchanged. Incorrect current
+password returns 403, malformed input 400, and five failed attempts within fifteen
+minutes cause 429. Development sessions cannot use this endpoint. Login and
+password changes share the account attempt limit. Forgotten-password recovery is
+an administrator operation, not this endpoint.
