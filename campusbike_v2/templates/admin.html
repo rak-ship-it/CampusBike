@@ -135,6 +135,7 @@
         .layout {
             display: flex;
             min-height: calc(100vh - 76px);
+            overflow-y: auto;
         }
 
 
@@ -183,6 +184,17 @@
             font-weight: 700;
         }
 
+
+        .management-title {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e4e1dc;
+        }
+
+        .nav-link:focus-visible {
+            outline: 2px solid #d62e3b;
+            outline-offset: 2px;
+        }
 
         .nav-link:hover {
             background: #f6f5f2;
@@ -1172,8 +1184,7 @@
 <!-- ====================================================== -->
 
 <aside class="sidebar">
-<a href="{{ url_for('admin_accounts') }}" style="display:block;padding:16px">Manage student accounts</a>
-<a href="{{ url_for('export_rides') }}" style="display:block;padding:16px">Export rides CSV</a>
+
 
     <div class="nav-title">
         OPERATIONS
@@ -1240,6 +1251,18 @@
     >
         <span class="nav-icon">○</span>
         <span>Students</span>
+    </a>
+
+    <div class="nav-title management-title">MANAGEMENT</div>
+
+    <a class="nav-link" href="{{ url_for('admin_accounts') }}">
+        <span class="nav-icon" aria-hidden="true">○</span>
+        <span>Student accounts</span>
+    </a>
+
+    <a class="nav-link" href="{{ url_for('export_rides') }}">
+        <span class="nav-icon" aria-hidden="true">↓</span>
+        <span>Export rides CSV</span>
     </a>
 
 </aside>
