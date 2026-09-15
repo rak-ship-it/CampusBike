@@ -1,0 +1,57 @@
+name: CampusBike checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r campusbike_v2/requirements-lock.txt
+      - run: python -m unittest discover -s campusbike_v2/tests -v
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: CampusBikeMobile
+    env:
+      EXPO_PUBLIC_API_BASE_URL: https://campusbike.example
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/api.test.cjs
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: npx expo export --platform android --platform ios --output-dir /tmp/campusbike-bundles
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: CampusBikeMobile
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Separate security gate: passing functional tests does not clear advisories.
+      - run: npm audit --audit-level=moderate

@@ -107,3 +107,36 @@ test('caller cancellation is forwarded to the request', async () => {
   await assert.rejects(result, /aborted/);
   assert.equal(calls[0].options.signal.aborted, true);
 });
+
+for (const status of [200, 401]) {
+  test(`delayed logout ${status} preserves a newer login`, async () => {
+    let finish, started;
+    const waiting = new Promise(resolve => { started = resolve; });
+    const { api, calls, redirects } = setup('android', () => new Promise(resolve => {
+      finish = resolve; started();
+    }));
+    await api.saveToken('old-session');
+    const logout = api.logoutSession();
+    await waiting;
+    await api.saveToken('new-session');
+    finish({ status, ok: status === 200 });
+    assert.equal(await logout, false);
+    assert.equal(await api.getToken(), 'new-session');
+    assert.equal(calls[0].options.headers.get('Authorization'), 'Bearer old-session');
+    assert.deepEqual(redirects, []);
+  });
+}
+
+test('a delayed unauthorized request does not erase a newer login', async () => {
+  let finish, started;
+  const waiting = new Promise(resolve => { started = resolve; });
+  const { api, redirects } = setup('android', () => new Promise(resolve => { finish = resolve; started(); }));
+  await api.saveToken('old');
+  const request = api.apiFetch(api.API_BASE_URL + '/api/me');
+  await waiting;
+  await api.saveToken('new');
+  finish({ status: 401, ok: false });
+  await request;
+  assert.equal(await api.getToken(), 'new');
+  assert.deepEqual(redirects, []);
+});

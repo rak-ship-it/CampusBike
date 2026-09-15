@@ -79,8 +79,7 @@ export default function ProfileScreen() {
   async function logout() {
 
     try {
-      await logoutSession();
-      router.replace('/');
+      if (await logoutSession()) router.replace('/');
     } catch {
       Alert.alert('Could not sign out', 'Check your connection and try again.');
     }

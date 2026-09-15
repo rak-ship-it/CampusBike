@@ -123,3 +123,24 @@ class ReleaseTests(FlowTestCase):
             self.assertEqual(client.post('/admin/login',data={'username':'admin','password':'wrong'}).status_code,200)
         self.assertEqual(client.post('/admin/login',data={'username':'admin','password':'wrong'}).status_code,429)
         self.assertEqual(client.get('/admin/login').headers['Cache-Control'],'no-store')
+
+    def test_malformed_return_ids_do_not_mutate_assignments(self):
+        self.post('rent', self.rent_payload())
+        assigned = self.reserve()
+        before = self.query('SELECT * FROM slots')
+        for route in ('reserve-return-slot', 'cancel-return-slot', 'end-ride'):
+            for field, value in [('ride_id', True), ('ride_id', 2**80), ('station_id', []), ('station_id', {}), ('slot_number', [])]:
+                payload = dict(ride_id=assigned['ride_id'], station_id=2, slot_number=assigned['slot'])
+                payload[field] = value
+                with self.subTest(route=route, field=field, value=value):
+                    self.assertEqual(self.client.post('/api/'+route, json=payload).status_code, 400)
+        self.assertEqual(self.query('SELECT * FROM slots'), before)
+        self.assertIsNotNone(self.active())
+
+    def test_null_expiry_releases_corrupt_student_assignment(self):
+        self.post('rent', self.rent_payload())
+        self.reserve()
+        self.query("UPDATE slots SET reserved_until=NULL WHERE bike_id='CB001'")
+        self.assertNotIn('reserved_return_slot', self.active())
+        self.assertFalse(self.query("SELECT * FROM slots WHERE bike_id='CB001' AND status='Reserved'"))
+        self.assertIsNotNone(self.active())

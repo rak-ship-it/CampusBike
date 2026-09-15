@@ -55,8 +55,15 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
   return response;
 }
 
-export async function logoutSession() {
-  const response = await apiFetch(`${API_BASE_URL}/api/logout`, { method: 'POST' });
+export async function logoutSession(): Promise<boolean> {
+  if (!API_BASE_URL) throw new Error('Configure EXPO_PUBLIC_API_BASE_URL before starting Expo.');
+  const token = await getToken();
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  // Bind sign-out to this session even if a new login happens during the request.
+  const response = await fetchWithTimeout(`${API_BASE_URL}/api/logout`, { method: 'POST', headers });
   if (!response.ok && response.status !== 401) throw new Error('Could not sign out. Try again.');
+  if ((await getToken()) !== token) return false;
   await clearSession();
+  return true;
 }

@@ -6,6 +6,7 @@ import statistics
 import time
 from contextlib import closing
 from flask import g, jsonify, request
+from return_validation import validate_return_identifiers
 
 RESERVATION_SECONDS = 600
 
@@ -21,7 +22,7 @@ def expire_reservations(db):
     db.execute('''UPDATE slots SET bike_id=NULL, status='Available',
         return_ride_id=NULL, reserved_until=NULL
         WHERE status='Reserved' AND return_ride_id IS NOT NULL AND (
-          reserved_until <= ? OR NOT EXISTS (
+          reserved_until IS NULL OR reserved_until <= ? OR NOT EXISTS (
             SELECT 1 FROM rides r JOIN bikes b ON b.bike_id=r.bike_id
             WHERE r.ride_id=slots.return_ride_id AND r.returned_at IS NULL
               AND r.bike_id=slots.bike_id AND b.status='In use'
@@ -84,6 +85,11 @@ def public_name(station):
 
 def register_returns(api, get_db, india_time):
     def transaction(action):
+        data = request.get_json(silent=True)
+        try:
+            validate_return_identifiers(data)
+        except ValueError as error:
+            return jsonify(success=False, message=str(error)), 400
         with closing(get_db()) as db:
             try:
                 db.execute('BEGIN IMMEDIATE')
@@ -91,7 +97,7 @@ def register_returns(api, get_db, india_time):
                 # Persist expiry even if the subsequent user action is rejected.
                 db.commit()
                 db.execute('BEGIN IMMEDIATE')
-                result=action(db,request.get_json(silent=True) or {})
+                result=action(db,data)
                 db.commit()
                 return jsonify(result)
             except ReturnError as error:
