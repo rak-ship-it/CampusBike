@@ -27,7 +27,7 @@ function setup(platform = 'android') {
     'expo-router': { router: { replace: route => redirects.push(route) } }
   };
   const context = {
-    exports: {}, Headers, Error,
+    exports: {}, Headers, Error, process: { env: { EXPO_PUBLIC_API_BASE_URL: 'https://campusbike.example' } },
     require: name => { assert.ok(modules[name], name); return modules[name]; },
     fetch: async (url, options) => {
       calls.push({ url, options });

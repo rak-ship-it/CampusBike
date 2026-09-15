@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { router } from 'expo-router';
 
 export const API_BASE_URL =
-  'https://effective-space-memory-5v4r5qj56jxxh7g4p-5000.app.github.dev';
+  (process.env.EXPO_PUBLIC_API_BASE_URL || '').trim().replace(/\/$/, '');
 
 const TOKEN_KEY = 'campusbike_access_token';
 // Web previews deliberately keep tokens in memory, not localStorage.
@@ -26,6 +26,7 @@ export async function clearSession() {
 }
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
+  if (!API_BASE_URL) throw new Error('Configure EXPO_PUBLIC_API_BASE_URL before starting Expo.');
   if (!url.startsWith(`${API_BASE_URL}/`)) throw new Error('Invalid API destination.');
   const token = await getToken();
   const headers = new Headers(options.headers);

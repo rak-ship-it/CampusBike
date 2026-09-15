@@ -93,6 +93,10 @@ export default function LoginScreen() {
 
   async function login(development = false) {
 
+    if (!API_BASE_URL) {
+      setError('Backend address is missing. Follow the release setup guide.');
+      return;
+    }
     const cleanId =
       studentId.trim().toUpperCase();
 

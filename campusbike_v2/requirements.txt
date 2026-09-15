@@ -4,3 +4,5 @@ requests>=2.32,<3
 Flask-WTF>=1.2,<2
 python-dotenv>=1.0,<2
 qrcode[pil]>=8.0,<9
+
+waitress>=3.0,<4

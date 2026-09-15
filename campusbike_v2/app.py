@@ -20,6 +20,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import hmac
+import secrets
+from settings import validate_deployment
+validate_deployment()
 import io
 import json
 import os
@@ -51,12 +54,14 @@ app = Flask(__name__)
 
 app.secret_key = os.environ.get(
     "SECRET_KEY",
-    "change-this-secret-before-deployment",
+    secrets.token_hex(32),
 )
 
 
 app.config.update(
 
+    MAX_CONTENT_LENGTH=64 * 1024,
+    PERMANENT_SESSION_LIFETIME=3600,
     SESSION_COOKIE_HTTPONLY=True,
 
     SESSION_COOKIE_SAMESITE="Lax",
@@ -166,7 +171,7 @@ ADMIN_USERNAME = os.environ.get(
 
 ADMIN_PASSWORD = os.environ.get(
     "ADMIN_PASSWORD",
-    "campusbike123",
+    "",
 )
 
 
@@ -1514,6 +1519,10 @@ def scan_bike(
 )
 
 def verify_and_rent():
+    if request.method == "POST":
+        return render_template("error.html", title="Use the mobile app",
+            message="Rental and exact-dock returns now run in the CampusBike mobile app. This legacy web page is read-only."), 409
+
 
     student_id = session.get(
         "student_id"
@@ -1963,6 +1972,10 @@ def verify_and_rent():
 def return_ride(
     ride_id
 ):
+    if request.method == "POST":
+        return render_template("error.html", title="Use the mobile app",
+            message="Rental and exact-dock returns now run in the CampusBike mobile app. This legacy web page is read-only."), 409
+
 
     student_id = (
         session[
@@ -2468,7 +2481,8 @@ def admin_login():
 
         if (
 
-            hmac.compare_digest(
+            bool(ADMIN_PASSWORD)
+            and hmac.compare_digest(
                 username,
                 ADMIN_USERNAME,
             )
@@ -2483,7 +2497,7 @@ def admin_login():
         ):
 
             session.clear()
-
+            session.permanent = True
 
             session[
                 "admin_logged_in"
@@ -2693,6 +2707,9 @@ def ensure_bike_movements_schema(
 def admin_dashboard():
 
     connection = get_db()
+    from ride_returns import expire_reservations
+    expire_reservations(connection)
+    connection.commit()
 
 
     # -----------------------------------------------------
@@ -6147,6 +6164,12 @@ def not_found(
     ), 404
 
 
+from admin_security import register_admin_security
+register_admin_security(app, get_db)
+
+from operator_routes import register_operator_routes
+register_operator_routes(app, get_db, admin_required)
+
 # =========================================================
 # START SERVER
 # =========================================================
@@ -6162,6 +6185,6 @@ if __name__ == "__main__":
             5000,
 
         debug=
-            True,
+            os.environ.get("FLASK_DEBUG", "0") == "1",
 
     )

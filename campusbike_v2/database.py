@@ -1,4 +1,5 @@
 import os
+import time
 import secrets
 import sqlite3
 
@@ -14,10 +15,7 @@ BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
 
-DB_NAME = os.path.join(
-    BASE_DIR,
-    "campusbike.db"
-)
+from settings import DB_NAME
 
 
 # =========================================================
@@ -751,6 +749,24 @@ def initialize_database(
 
         connection.commit()
 
+
+        cursor.execute("""CREATE TABLE IF NOT EXISTS admin_login_limits (
+            key TEXT PRIMARY KEY, attempts INTEGER NOT NULL, window_start INTEGER NOT NULL
+        )""")
+        add_column_if_missing(cursor, "slots", "return_ride_id", "INTEGER")
+        add_column_if_missing(cursor, "slots", "reserved_until", "INTEGER")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS mobile_return_receipts (
+            ride_id INTEGER PRIMARY KEY, student_id TEXT NOT NULL,
+            station_id INTEGER NOT NULL, slot_number TEXT NOT NULL, response_json TEXT NOT NULL
+        )""")
+        # Preserve existing student assignments during the upgrade, with a grace period.
+        cursor.execute("""UPDATE slots SET return_ride_id=(
+            SELECT r.ride_id FROM rides r JOIN bikes b ON b.bike_id=r.bike_id
+            WHERE r.bike_id=slots.bike_id AND r.returned_at IS NULL AND b.status='In use'
+            ORDER BY r.ride_id DESC LIMIT 1), reserved_until=?
+            WHERE status='Reserved' AND return_ride_id IS NULL AND EXISTS (
+                SELECT 1 FROM bikes b WHERE b.bike_id=slots.bike_id AND b.status='In use'
+            )""", (int(time.time())+600,))
 
         add_column_if_missing(cursor, "students", "password_hash", "TEXT")
         cursor.execute("""

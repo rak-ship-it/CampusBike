@@ -41,6 +41,10 @@ def register_mobile_auth(blueprint, get_db):
             return error('Your session has expired. Please sign in again.', 401)
         if row['kind'] == 'dev' and not dev_enabled():
             return error('Development login is disabled. Please sign in again.', 401)
+        from ride_returns import expire_reservations
+        with closing(get_db()) as db:
+            expire_reservations(db)
+            db.commit()
         g.student_id = row['student_id']
         g.mobile_student = {key: row[key] for key in ('student_id', 'name', 'email')}
         g.mobile_token_hash = digest

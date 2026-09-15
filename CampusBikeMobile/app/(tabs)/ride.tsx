@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   SafeAreaView,
@@ -48,10 +48,13 @@ type ActiveRide = {
   reserved_return_station_id?: number | null;
   reserved_return_station?: string | null;
   reserved_return_slot?: string | null;
+  reserved_return_expires_at?: number | null;
 };
 
 
 type ReturnReservation = {
+  ride_id: number;
+  expires_at: number;
   bike_id: string;
   station_id: number;
   station: string;
@@ -189,6 +192,12 @@ export default function RideScreen() {
   const [selectedStation, setSelectedStation] =
     useState<Station | null>(null);
 
+  const [clock, setClock] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const [returnReservation, setReturnReservation] =
     useState<ReturnReservation | null>(null);
 
@@ -295,6 +304,8 @@ export default function RideScreen() {
       ) {
 
         setReturnReservation({
+          ride_id: activeRide.ride_id,
+          expires_at: activeRide.reserved_return_expires_at || 0,
           bike_id:
             activeRide.bike_id,
 
@@ -425,6 +436,8 @@ export default function RideScreen() {
       // TAKE MULTIPLE GPS SAMPLES
       // =================================================
 
+      const locationSamples: { latitude: number; longitude: number; accuracy: number; timestamp: number }[] = [];
+
       const gpsSamples: {
         distance: number;
         accuracy: number;
@@ -466,6 +479,12 @@ export default function RideScreen() {
           );
 
 
+        locationSamples.push({
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+          accuracy: reportedAccuracy,
+          timestamp: currentLocation.timestamp,
+        });
         gpsSamples.push({
           distance:
             sampleDistance,
@@ -634,6 +653,8 @@ export default function RideScreen() {
 
             station_id:
               selectedStation.station_id,
+            ride_id: ride?.ride_id,
+            location_samples: locationSamples,
 
           }),
 
@@ -743,6 +764,7 @@ export default function RideScreen() {
 
             slot_number:
               returnReservation.slot,
+            ride_id: returnReservation.ride_id,
           }),
         }
       );
@@ -763,6 +785,7 @@ export default function RideScreen() {
           'Please try again.'
         );
 
+        await loadRide();
         return;
 
       }
@@ -833,6 +856,7 @@ export default function RideScreen() {
           body: JSON.stringify({
             student_id:
               student.student_id,
+            ride_id: ride?.ride_id,
           }),
         }
       );
@@ -1105,6 +1129,15 @@ export default function RideScreen() {
 
 
 
+            <View style={styles.returnCard}>
+              <Text style={styles.smallLabel}>RIDE TIME</Text>
+              <Text style={styles.returnTitle}>
+                {ride.rented_at ? (() => {
+                  const seconds = Math.max(0, Math.floor((clock - Date.parse(ride.rented_at.replace(' ', 'T') + '+05:30')) / 1000));
+                  return `${Math.floor(seconds / 3600)}:${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+                })() : '—'}
+              </Text>
+            </View>
             {/* END RIDE */}
 
             {returnReservation ? (
@@ -1159,6 +1192,7 @@ export default function RideScreen() {
 
 
                 <Text style={styles.returnSubtitle}>
+                  Assignment: {Math.max(0, Math.ceil((returnReservation.expires_at * 1000 - clock) / 60000))} min remaining. If expired, cancel and request a new dock.{'\n'}
                   Put {returnReservation.bike_id} into the physical dock with this exact number. Later the smart dock will confirm the lock automatically.
                 </Text>
 

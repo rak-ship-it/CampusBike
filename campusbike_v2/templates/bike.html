@@ -17,7 +17,7 @@
 {% if active_ride %}
 <div class="notice warning">You already have an active ride on {{ active_ride['bike_id'] }}.</div>
 {% elif bike['status'] == 'Available' %}
-<a class="camera-rent-button" href="{{ url_for('scan_bike', bike_id=bike['bike_id']) }}">📷 Rent · Scan bike QR</a>
+<p>Use the CampusBike mobile app to scan this bike and start a ride.</p>
 <p class="tiny centered">The camera verifies that you are scanning the QR attached to {{ bike['bike_id'] }}.</p>
 {% else %}
 <div class="notice warning">This bike is no longer available.</div>

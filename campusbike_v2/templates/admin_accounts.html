@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Student accounts · CampusBike{% endblock %}
+{% block content %}
+<h1>Student accounts</h1>
+<p><a href="{{ url_for('admin_dashboard') }}">← Admin dashboard</a> · <a href="{{ url_for('export_rides') }}">Export ride history</a></p>
+<p>Verify a student’s identity before creating an account. Password resets sign out their existing mobile sessions.</p>
+<section class="card">
+<h2>Create account</h2>
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="action" value="create">
+<label>Student ID <input name="student_id" required maxlength="40" placeholder="STU006"></label>
+<label>Name <input name="name" required maxlength="100"></label>
+<label>Initial password <input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label>
+<button type="submit">Create student</button>
+</form>
+</section>
+{% for student in students %}
+<section class="card" style="margin-top:16px;padding:16px">
+<h2>{{ student.student_id }} · {{ student.name }}</h2>
+<p>{{ 'Active' if student.active else 'Disabled' }} · {{ 'Password set' if student.has_password else 'Needs a mobile password' }}</p>
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="student_id" value="{{ student.student_id }}">
+<input type="hidden" name="action" value="password">
+<label>New password <input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label>
+<button type="submit">Set password and revoke sessions</button>
+</form>
+<form method="post" style="margin-top:8px">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="student_id" value="{{ student.student_id }}">
+<input type="hidden" name="action" value="{{ 'disable' if student.active else 'enable' }}">
+<button type="submit">{{ 'Disable account' if student.active else 'Enable account' }}</button>
+</form>
+</section>
+{% endfor %}
+{% endblock %}

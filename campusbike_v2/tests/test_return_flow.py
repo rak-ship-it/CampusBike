@@ -7,6 +7,7 @@ import sqlite3
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -46,6 +47,7 @@ class FlowTestCase(unittest.TestCase):
             self.addCleanup(patcher.stop)
         with sqlite3.connect(self.path) as db:
             db.execute('UPDATE students SET password_hash=?', (self.password_hash,))
+            db.execute('UPDATE stations SET latitude=18.65,longitude=73.77')
         self.client = self.web.app.test_client()
         login = self.client.post('/api/login', json={'student_id': 'STU001', 'password': 'test-password-for-suite'})
         self.assertEqual(login.status_code, 200, login.json)
@@ -61,6 +63,13 @@ class FlowTestCase(unittest.TestCase):
             return [dict(row) for row in connection.execute(sql, args)]
 
     def post(self, route, payload, expected=200):
+        payload = dict(payload)
+        if route in ('reserve-return-slot','cancel-return-slot','end-ride') and 'ride_id' not in payload:
+            rows = self.query("SELECT ride_id FROM rides WHERE student_id='STU001' ORDER BY ride_id DESC LIMIT 1")
+            if rows:
+                payload['ride_id'] = rows[0]['ride_id']
+        if route == 'reserve-return-slot' and 'location_samples' not in payload:
+            payload['location_samples'] = [dict(latitude=18.65,longitude=73.77,accuracy=5,timestamp=int(time.time()*1000)) for _ in range(3)]
         response = self.client.post('/api/' + route, json=payload)
         self.assertEqual(response.status_code, expected, response.json)
         return response.json
@@ -97,7 +106,7 @@ class ReturnFlowTests(FlowTestCase):
         history = self.client.get('/api/students/STU001/rides').json
         self.assertEqual(history['total_rides'], 1)
         self.assertEqual(history['rides'][0]['return_slot'], reservation['slot'])
-        self.post('end-ride', payload, 409)
+        self.post('end-ride', payload)
         database.initialize_database(self.path)
         bike = self.query("SELECT station_id, slot, total_rides FROM bikes WHERE bike_id='CB001'")[0]
         self.assertEqual(bike, dict(station_id=2, slot=reservation['slot'], total_rides=1))
