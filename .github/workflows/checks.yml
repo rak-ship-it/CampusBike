@@ -36,9 +36,10 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: node --test tests/api.test.cjs
+      - run: npm test
       - run: npx tsc --noEmit
       - run: npm run lint
+      - run: npx expo install --check
       - run: npx expo export --platform android --platform ios --output-dir /tmp/campusbike-bundles
   dependency-audit:
     runs-on: ubuntu-latest

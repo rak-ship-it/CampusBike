@@ -18,7 +18,7 @@ dock assignment. A software confirmation button simulates a physical return.
 Checks:
 
 ```bash
-node --test tests/api.test.cjs
+npm test
 npx tsc --noEmit
 npm run lint
 npx expo export --platform android --platform ios
@@ -30,3 +30,7 @@ accounts, identifiers/signing and platform-specific map configuration. Browser
 preview is not the supported production map client.
 
 Do not run the old `reset-project` helper to install or upgrade CampusBike.
+
+Dependency fixes retain SDK 54. Use Node 22 LTS and normal `npm ci` so the required
+compatibility patch runs. See [dependency security](../docs/DEPENDENCY-SECURITY.md)
+for the overrides, patch and audit checkpoint.

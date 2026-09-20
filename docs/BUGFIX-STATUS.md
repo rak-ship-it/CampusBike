@@ -15,7 +15,15 @@ This checkpoint is not a claim of zero bugs or approval for a physical fleet.
   exports, and a separate dependency-security gate. No deployment or live database
   access is part of these jobs.
 
-## Verification and open issues
+## Current checkpoint — 20 September 2026
+
+The backend and mobile jobs passed for `1b70af9` (36 backend tests). The on-device
+rental/assigned-dock return/history flow was also shown in the founder’s recording.
+The dependency findings described below are historical; the new dependency update
+and its verification are documented in [DEPENDENCY-SECURITY.md](DEPENDENCY-SECURITY.md).
+Physical dock confirmation is still simulated.
+
+## Earlier verification and open issues
 
 Local checks passed: three input-validation tests, nine client-session tests,
 Python compilation, TypeScript, Expo lint, and Android/iOS JavaScript bundle exports (not signed installers). Full Flask integration rerun was
