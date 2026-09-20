@@ -1,37 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Student accounts · CampusBike{% endblock %}
-{% block content %}
-<h1>Student accounts</h1>
-<p><a href="{{ url_for('admin_dashboard') }}">← Admin dashboard</a> · <a href="{{ url_for('export_rides') }}">Export ride history</a></p>
-<p>Verify a student’s identity before creating an account. Password resets sign out their existing mobile sessions.</p>
-<section class="card">
-<h2>Create account</h2>
-<form method="post">
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<input type="hidden" name="action" value="create">
-<label>Student ID <input name="student_id" required maxlength="40" placeholder="STU006"></label>
-<label>Name <input name="name" required maxlength="100"></label>
-<label>Initial password <input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label>
-<button type="submit">Create student</button>
-</form>
-</section>
-{% for student in students %}
-<section class="card" style="margin-top:16px;padding:16px">
-<h2>{{ student.student_id }} · {{ student.name }}</h2>
-<p>{{ 'Active' if student.active else 'Disabled' }} · {{ 'Password set' if student.has_password else 'Needs a mobile password' }}</p>
-<form method="post">
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<input type="hidden" name="student_id" value="{{ student.student_id }}">
-<input type="hidden" name="action" value="password">
-<label>New password <input name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label>
-<button type="submit">Set password and revoke sessions</button>
-</form>
-<form method="post" style="margin-top:8px">
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<input type="hidden" name="student_id" value="{{ student.student_id }}">
-<input type="hidden" name="action" value="{{ 'disable' if student.active else 'enable' }}">
-<button type="submit">{{ 'Disable account' if student.active else 'Enable account' }}</button>
-</form>
-</section>
-{% endfor %}
+{% block head %}
+<style>
+.accounts{max-width:1100px;margin:24px auto;color:#202124}.accounts a{color:#454545}.accounts-head{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}.accounts h1{margin:8px 0;font-size:32px}.accounts p{color:#666;line-height:1.6}.accounts-layout{display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start}.account-panel{background:white;border:1px solid #e3e0da;border-radius:18px;padding:24px}.accounts h2{margin:0 0 12px;font-size:20px}.accounts label{display:block;font-weight:600;font-size:13px;margin:16px 0 6px}.accounts input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #cfcfcf;border-radius:9px;background:#fff;color:#222;font:inherit}.accounts input:focus{outline:2px solid #555;outline-offset:2px}.accounts button,.accounts .back-link{display:inline-block;border:1px solid #d5d5d5;border-radius:9px;padding:11px 15px;background:#f3f3f1;color:#222;font:inherit;cursor:pointer;text-decoration:none}.accounts .primary{background:#202124;color:#fff;width:100%;margin-top:20px}.accounts small{display:block;color:#666;margin-top:7px;line-height:1.5}.account-row{border-top:1px solid #e5e5e5;padding:20px 0}.account-row:last-child{padding-bottom:0}.account-heading{display:flex;justify-content:space-between;gap:15px;align-items:start}.account-heading h3{margin:0 0 5px;font-size:17px}.account-status{font-size:12px;font-weight:700;color:#296444;background:#edf6ef;padding:5px 9px;border-radius:6px;white-space:nowrap}.account-status.disabled{color:#666;background:#eee}.account-tools{display:flex;gap:16px;align-items:start;margin-top:16px;flex-wrap:wrap}.account-tools details{flex:1;min-width:220px}.account-tools summary{cursor:pointer;font-size:14px;padding:12px 0}.account-tools button{font-size:13px}.accounts .reset-submit{margin-top:10px}.accounts .empty{padding:24px 0}.accounts .search{margin-bottom:20px}.account-id{font-family:monospace;font-size:13px;color:#666}@media(max-width:800px){.accounts-layout{grid-template-columns:1fr}.accounts-head{align-items:start;flex-direction:column}.account-panel{padding:20px}}
+</style>
 {% endblock %}
+{% block content %}
+<div class="accounts">
+  <header class="accounts-head"><div><h1>Student accounts</h1><p>Create logins and manage student access.</p></div><a class="back-link" href="{{ url_for('admin_dashboard') }}">← Admin dashboard</a></header>
+  <div class="accounts-layout">
+    <section class="account-panel"><h2>Create student</h2><p>Verify the student’s identity, then share their login privately.</p>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="create">
+        <label for="new-id">Student ID</label><input id="new-id" name="student_id" required minlength="3" maxlength="40" pattern="[A-Za-z0-9_-]{3,40}" placeholder="STU006"><small>3–40 letters, numbers, hyphens or underscores.</small>
+        <label for="new-name">Full name</label><input id="new-name" name="name" required maxlength="100" autocomplete="name">
+        <label for="new-password">Initial password</label><input id="new-password" name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"><small>12–128 characters. The student can change it in the app.</small>
+        <button class="primary" type="submit">Create student account</button>
+      </form>
+    </section>
+    <section class="account-panel"><h2>Registered students · {{ students|length }}</h2>
+      <label for="student-search">Find a student</label><input class="search" id="student-search" type="search" placeholder="Search name or student ID" autocomplete="off">
+      {% for student in students %}
+      <article class="account-row" data-student="{{ (student.student_id ~ ' ' ~ student.name)|lower }}">
+        <div class="account-heading"><div><h3>{{ student.name }}</h3><span class="account-id">{{ student.student_id }}</span></div><span class="account-status {{ 'disabled' if not student.active else '' }}">{{ 'Active' if student.active else 'Disabled' }}</span></div>
+        <small>{{ 'Mobile login ready' if student.has_password else 'Set a password to enable mobile login' }}</small>
+        <div class="account-tools"><details><summary>Reset password</summary><form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="student_id" value="{{ student.student_id }}"><input type="hidden" name="action" value="password">
+          <label for="password-{{ student.student_id }}">New password</label><input id="password-{{ student.student_id }}" name="password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"><small>Signs this student out of existing mobile sessions.</small><button class="reset-submit" type="submit">Save new password</button>
+        </form></details><form method="post" {% if student.active %}onsubmit="return confirm('Disable this student’s login and sign them out? An active ride must be completed first.')"{% endif %}>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="student_id" value="{{ student.student_id }}"><input type="hidden" name="action" value="{{ 'disable' if student.active else 'enable' }}"><button type="submit">{{ 'Disable account' if student.active else 'Enable account' }}</button>
+        </form></div>
+      </article>
+      {% else %}<p class="empty">No students yet. Create the first account using the form.</p>{% endfor %}
+      <p id="no-results" hidden>No matching students.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+document.getElementById('student-search').addEventListener('input', function () {
+  const query = this.value.trim().toLowerCase(); let count = 0;
+  document.querySelectorAll('[data-student]').forEach(row => { row.hidden = !row.dataset.student.includes(query); if (!row.hidden) count++; });
+  document.getElementById('no-results').hidden = count > 0 || !query;
+});
+</script>{% endblock %}

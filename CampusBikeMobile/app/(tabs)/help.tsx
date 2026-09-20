@@ -1,3 +1,5 @@
+import { ReportBikeScanner } from '../../components/report-bike-scanner';
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
 
 import {
@@ -30,9 +32,7 @@ type Student = {
 };
 
 
-type Bike = {
-  bike_id: string;
-};
+
 
 
 const ISSUE_TYPES = [
@@ -72,8 +72,8 @@ export default function HelpScreen() {
   const [student, setStudent] =
     useState<Student | null>(null);
 
-  const [bikes, setBikes] =
-    useState<Bike[]>([]);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [manualEntry, setManualEntry] = useState(false);
 
   const [bikeId, setBikeId] =
     useState('');
@@ -127,111 +127,6 @@ export default function HelpScreen() {
       setStudent(studentData);
 
 
-      const [
-        stationsResponse,
-        activeRideResponse,
-      ] = await Promise.all([
-
-        apiFetch(
-          `${API_BASE_URL}/api/stations`
-        ),
-
-        apiFetch(
-          `${API_BASE_URL}/api/students/${studentData.student_id}/active-ride`
-        ),
-
-      ]);
-
-
-      const stationsData =
-        await stationsResponse.json();
-
-
-      const activeRideData =
-        await activeRideResponse.json();
-
-
-      const bikeMap:
-        Record<string, Bike> = {};
-
-
-      /*
-       * Add bikes currently parked at stations.
-       */
-
-      if (Array.isArray(stationsData)) {
-
-        stationsData.forEach(
-          (station: any) => {
-
-            const stationBikes =
-              station.bikes || [];
-
-
-            stationBikes.forEach(
-              (bike: any) => {
-
-                if (bike.bike_id) {
-
-                  bikeMap[bike.bike_id] = {
-                    bike_id:
-                      bike.bike_id,
-                  };
-
-                }
-
-              }
-            );
-
-          }
-        );
-
-      }
-
-
-      /*
-       * Also include the student's active bike.
-       * This means a student can report a problem
-       * while they are actually riding it.
-       */
-
-      const activeRide =
-        activeRideData?.ride ||
-        activeRideData?.active_ride ||
-        activeRideData;
-
-
-      if (
-        activeRide?.bike_id
-      ) {
-
-        bikeMap[
-          activeRide.bike_id
-        ] = {
-          bike_id:
-            activeRide.bike_id,
-        };
-
-
-        setBikeId(
-          activeRide.bike_id
-        );
-
-      }
-
-
-      const list =
-        Object.values(
-          bikeMap
-        ).sort(
-          (a, b) =>
-            a.bike_id.localeCompare(
-              b.bike_id
-            )
-        );
-
-
-      setBikes(list);
 
 
     } catch (error) {
@@ -267,8 +162,8 @@ export default function HelpScreen() {
     if (!bikeId) {
 
       Alert.alert(
-        'Choose a bike',
-        'Select the bike that has the problem.'
+        'Identify the bike',
+        'Scan its QR code or enter the printed bike ID.'
       );
 
       return;
@@ -405,6 +300,7 @@ export default function HelpScreen() {
 
     <SafeAreaView style={styles.page}>
 
+      {scannerOpen && <ReportBikeScanner onClose={() => setScannerOpen(false)} onSelect={id => { setBikeId(id); setManualEntry(false); setScannerOpen(false); }} />}
       <ScrollView
 
         contentContainerStyle={
@@ -474,63 +370,18 @@ export default function HelpScreen() {
           </Text>
 
 
-          {bikes.length === 0 ? (
-
-            <Text style={styles.noBikeText}>
-              No bikes available to report right now.
-            </Text>
-
-          ) : (
-
-            <View style={styles.optionsWrap}>
-
-              {bikes.map(
-                (bike) => (
-
-                  <Pressable
-
-                    key={
-                      bike.bike_id
-                    }
-
-                    onPress={() =>
-                      setBikeId(
-                        bike.bike_id
-                      )
-                    }
-
-                    style={[
-                      styles.bikeButton,
-
-                      bikeId ===
-                        bike.bike_id &&
-                        styles.bikeButtonSelected,
-                    ]}
-
-                  >
-
-                    <Text
-                      style={[
-                        styles.bikeText,
-
-                        bikeId ===
-                          bike.bike_id &&
-                          styles.bikeTextSelected,
-                      ]}
-                    >
-                      🚲 {bike.bike_id}
-                    </Text>
-
-                  </Pressable>
-
-                )
-              )}
-
-            </View>
-
-          )}
-
-
+          <Pressable accessibilityRole="button" accessibilityLabel="Scan bike QR to report a problem"
+            style={styles.reportScanButton} disabled={sending} onPress={() => setScannerOpen(true)}>
+            <Ionicons name="scan-outline" size={22} color="#303030" />
+            <Text style={styles.reportScanText}>{bikeId ? 'Scan a different bike' : 'Scan bike QR'}</Text>
+          </Pressable>
+          <Text style={styles.selectedBike}>{bikeId ? `Reporting: ${bikeId}` : 'Scan the QR on the bicycle with the problem.'}</Text>
+          <Pressable onPress={() => setManualEntry(!manualEntry)} accessibilityRole="button">
+            <Text style={styles.manualLink}>QR damaged? Enter the bike ID</Text>
+          </Pressable>
+          {manualEntry && <TextInput accessibilityLabel="Bike ID" value={bikeId}
+            onChangeText={value => setBikeId(value.trim().toUpperCase())} autoCapitalize="characters"
+            autoCorrect={false} maxLength={40} placeholder="e.g. CB001" style={styles.bikeIdInput} />}
 
           {/* ISSUE */}
 
@@ -778,6 +629,11 @@ export default function HelpScreen() {
 const styles =
   StyleSheet.create({
 
+    reportScanButton: { minHeight: 50, borderRadius: 12, borderWidth: 1, borderColor: '#D8D5CE', backgroundColor: '#F1F0EC', flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' },
+    reportScanText: { color: '#303030', fontSize: 14, fontWeight: '700' },
+    selectedBike: { color: '#55514C', marginTop: 10, fontSize: 13 },
+    manualLink: { color: '#55514C', textDecorationLine: 'underline', paddingVertical: 12, fontSize: 12 },
+    bikeIdInput: { borderWidth: 1, borderColor: '#DDD9D2', borderRadius: 10, padding: 12, color: '#151515' },
     page: {
       flex: 1,
       backgroundColor:

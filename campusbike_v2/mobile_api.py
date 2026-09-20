@@ -1021,6 +1021,11 @@ def bike_by_qr():
         }), 409
 
 
+    # Reporting identifies an active bike without requiring it to be rentable.
+    # The rental endpoint still independently enforces availability and QR proof.
+    if data.get("purpose") == "report":
+        return jsonify({"success": True, "bike": {"bike_id": bike["bike_id"]}})
+
     if bike["status"] != "Available":
 
         return jsonify({
