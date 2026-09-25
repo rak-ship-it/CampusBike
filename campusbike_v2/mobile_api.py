@@ -1,6 +1,9 @@
 from flask import Blueprint, jsonify, request, g
 import sqlite3
 import os
+import math
+import statistics
+import time
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -37,6 +40,60 @@ def india_time():
         ZoneInfo("Asia/Kolkata")
     ).strftime("%Y-%m-%d %H:%M:%S")
 
+
+def verify_rent_location(data, station, db):
+    samples = data.get("location_samples")
+    if not isinstance(samples, list) or not 3 <= len(samples) <= 6:
+        raise ValueError("Refresh the app and take three GPS samples near the bike station.")
+    if station["latitude"] is None or station["longitude"] is None:
+        raise ValueError("This station needs GPS coordinates configured by the administrator.")
+
+    usable = []
+    now = time.time() * 1000
+
+    def distance_m(lat1, lon1, lat2, lon2):
+        p1, p2 = map(math.radians, (lat1, lat2))
+        a = math.sin((p2-p1)/2)**2 + math.cos(p1)*math.cos(p2)*math.sin(math.radians(lon2-lon1)/2)**2
+        return 6371000 * 2 * math.asin(math.sqrt(min(1, max(0, a))))
+
+    for sample in samples:
+        try:
+            lat, lon, accuracy, timestamp = [sample[k] for k in ("latitude","longitude","accuracy","timestamp")]
+            if any(isinstance(v, bool) or not isinstance(v,(int,float)) or not math.isfinite(v) for v in (lat,lon,accuracy,timestamp)):
+                continue
+            if not (-90 <= lat <= 90 and -180 <= lon <= 180 and 0 <= accuracy <= 100 and -10000 <= now-timestamp <= 60000):
+                continue
+            usable.append((distance_m(lat,lon,station["latitude"],station["longitude"]),accuracy,lat,lon))
+        except (KeyError,TypeError):
+            continue
+
+    if len(usable) < 2:
+        raise ValueError("GPS readings are weak or old. Move into an open area near the bike station and try again.")
+
+    median_distance = statistics.median(x[0] for x in usable)
+    allowed_distance = 100 + min(30, min(x[1] for x in usable))
+    if median_distance > allowed_distance:
+        raise ValueError("You are too far from the bike station. Move closer to rent this bike.")
+
+    boundary = db.execute(
+        "SELECT latitude,longitude FROM campus_boundary_points WHERE campus_id=? ORDER BY point_order",
+        (station["campus_id"],)
+    ).fetchall()
+    if len(boundary) >= 3:
+        inside_count = 0
+        for sample in usable:
+            lat, lon = sample[2], sample[3]
+            inside = False
+            previous = boundary[-1]
+            for point in boundary:
+                x1,y1 = previous["longitude"],previous["latitude"]
+                x2,y2 = point["longitude"],point["latitude"]
+                if (y1>lat)!=(y2>lat) and lon < (x2-x1)*(lat-y1)/(y2-y1)+x1:
+                    inside = not inside
+                previous = point
+            inside_count += int(inside)
+        if inside_count <= len(usable)//2:
+            raise ValueError("Your GPS position is outside the campus service area.")
 
 def parse_mobile_qr_token(raw_value):
 
@@ -735,6 +792,12 @@ def rent_bike():
             }), 409
 
 
+        try:
+            verify_rent_location(data, start_station_row, connection)
+        except ValueError as error:
+            return jsonify({"success": False, "message": str(error)}), 403
+
+
         display_name = start_station_row["display_name"]
 
         sponsor_name = (
@@ -966,7 +1029,8 @@ def bike_by_qr():
                 station,
                 slot,
                 lock_status,
-                active
+                active,
+                station_id
 
             FROM bikes
 
@@ -1042,18 +1106,27 @@ def bike_by_qr():
         }), 409
 
 
+    connection = get_db()
+    station = connection.execute(
+        "SELECT latitude,longitude FROM stations WHERE station_id=? AND active=1",
+        (bike["station_id"],)
+    ).fetchone()
+    connection.close()
+
+    if not station or station["latitude"] is None or station["longitude"] is None:
+        return jsonify({"success": False, "message": "This station does not have GPS coordinates configured."}), 409
+
     return jsonify({
-
         "success": True,
-
         "bike": {
             "bike_id": bike["bike_id"],
             "status": bike["status"],
             "station": bike["station"],
             "slot": bike["slot"],
-            "lock_status": bike["lock_status"]
+            "lock_status": bike["lock_status"],
+            "station_latitude": station["latitude"],
+            "station_longitude": station["longitude"]
         }
-
     })
 
 # =========================================================
