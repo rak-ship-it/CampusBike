@@ -764,7 +764,10 @@ def rent_bike():
                 ) AS display_name,
 
                 sponsor_name,
-                active
+                active,
+                latitude,
+                longitude,
+                campus_id
 
             FROM stations
 
