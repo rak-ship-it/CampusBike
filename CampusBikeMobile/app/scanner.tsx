@@ -22,6 +22,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 
 import { API_BASE_URL, apiFetch } from '../services/api';
 
@@ -119,7 +120,9 @@ export default function ScannerScreen() {
 
   async function startRide(
     bikeId: string,
-    qrToken: string
+    qrToken: string,
+    _stationLatitude: number,
+    _stationLongitude: number
   ) {
 
     if (!student) {
@@ -127,9 +130,20 @@ export default function ScannerScreen() {
     }
 
 
-    setMessage(
-      `Starting ride with ${bikeId}...`
-    );
+    setMessage('Checking your location near the station...');
+
+    if (!(await Location.hasServicesEnabledAsync())) throw new Error('Turn on location services to rent this bike.');
+    const permission = await Location.requestForegroundPermissionsAsync();
+    if (permission.status !== 'granted') throw new Error('CampusBike needs your location to confirm you are near the bike station.');
+
+    const locationSamples: { latitude:number; longitude:number; accuracy:number; timestamp:number }[] = [];
+    for (let i=0; i<3; i++) {
+      const current = await Location.getCurrentPositionAsync({accuracy: Location.Accuracy.High});
+      locationSamples.push({latitude:current.coords.latitude, longitude:current.coords.longitude, accuracy:typeof current.coords.accuracy === 'number' ? current.coords.accuracy : 100, timestamp:current.timestamp});
+      if (i<2) await new Promise(resolve => setTimeout(resolve,700));
+    }
+
+    setMessage(`Starting ride with ${bikeId}...`);
 
 
     const response = await apiFetch(
@@ -152,6 +166,9 @@ export default function ScannerScreen() {
 
           qr_token:
             qrToken,
+
+          location_samples:
+            locationSamples,
 
         }),
 
@@ -292,7 +309,9 @@ export default function ScannerScreen() {
 
       await startRide(
         bikeId,
-        qrToken
+        qrToken,
+        Number(identifyData.bike.station_latitude),
+        Number(identifyData.bike.station_longitude)
       );
 
 
