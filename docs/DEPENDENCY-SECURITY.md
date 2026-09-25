@@ -78,3 +78,22 @@ and check login, map/navigation, QR scan and the existing return flow on the pho
 - [UUID bounds-check advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq)
 - [YAML merge-source advisory](https://github.com/advisories/GHSA-2883-xcg3-v3hh)
 - [Expo SDK 54 reference](https://docs.expo.dev/versions/v54.0.0/)
+
+## Live Metro watcher regression — 25 September 2026
+
+The initial security update passed static exports but missed a development-server
+incompatibility: Metro 0.83.8 emits `changes`, while Expo CLI 54 reads
+`eventsQueue`. Any watched file change could crash Expo with
+`TypeError: events is not iterable`. This was reproduced locally.
+
+`patches/metro-file-map+0.83.8.patch` adds the legacy notification alongside
+Metro's unchanged new notification, including absolute paths and file/directory
+types. It keeps the patched asset parsers and all security dependency versions.
+Normal `npm ci` applies both compatibility patches automatically.
+
+The CI mobile job now runs `node tests/metro-dev-server-smoke.cjs`. Unlike a
+static export, it starts Expo with watching enabled, adds a temporary route,
+checks generated route types, fetches a development bundle, edits it and checks
+that the bundle changes, then deletes it and checks route removal. The temporary
+file and server are cleaned up. The test uses localhost; it does not validate
+an external tunnel or a physical phone.

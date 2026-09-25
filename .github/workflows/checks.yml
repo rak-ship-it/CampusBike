@@ -37,6 +37,7 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npm test
+      - run: node tests/metro-dev-server-smoke.cjs
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npx expo install --check

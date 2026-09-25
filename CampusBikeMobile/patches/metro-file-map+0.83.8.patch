@@ -1,0 +1,41 @@
+diff --git a/node_modules/metro-file-map/src/index.js b/node_modules/metro-file-map/src/index.js
+index 438108b..fe3d8ed 100644
+--- a/node_modules/metro-file-map/src/index.js
++++ b/node_modules/metro-file-map/src/index.js
+@@ -562,7 +562,36 @@ class FileMap extends _events.default {
+         });
+         hmrPerfLogger.point("fileChange_start");
+       }
++      // Expo SDK 54 consumes the pre-0.83.8 eventsQueue interface.
++      // Keep Metro's new changes view intact for its own consumers.
++      const eventsQueue = [];
++      for (const [type, entries] of [
++        ["add", changesWithMetadata.addedFiles],
++        ["change", changesWithMetadata.modifiedFiles],
++        ["delete", changesWithMetadata.removedFiles],
++      ]) {
++        for (const [relativePath, metadata] of entries) {
++          eventsQueue.push({
++            type,
++            filePath: require("path").resolve(this.#options.rootDir, relativePath),
++            metadata: { ...metadata, type: metadata.isSymlink ? "l" : "f" },
++          });
++        }
++      }
++      for (const [type, entries] of [
++        ["add", changesWithMetadata.addedDirectories],
++        ["delete", changesWithMetadata.removedDirectories],
++      ]) {
++        for (const relativePath of entries) {
++          eventsQueue.push({
++            type,
++            filePath: require("path").resolve(this.#options.rootDir, relativePath),
++            metadata: { type: "d" },
++          });
++        }
++      }
+       const changeEvent = {
++        eventsQueue,
+         changes: changesWithMetadata,
+         logger: hmrPerfLogger,
+         rootDir: this.#options.rootDir,
