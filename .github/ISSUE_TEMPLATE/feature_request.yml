@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest an improvement to CampusBike
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the user or operator problem first.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+      description: Describe your proposed improvement.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of CampusBike is this about?
+      options:
+        - Student mobile app
+        - Admin dashboard
+        - Backend or API
+        - Stations and docking
+        - Maintenance and fleet
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: I understand physical locks and automatic dock sensors are not currently implemented.
+          required: false
