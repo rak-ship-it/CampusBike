@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">CampusBike system architecture</title>
+  <desc id="desc">Student mobile app and admin dashboard communicate with a Flask backend, which stores application data in SQLite.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#101827"/><stop offset="1" stop-color="#1d293b"/></linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb625f"/><stop offset="1" stop-color="#c92e3a"/></linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#91a4bd"/></marker>
+    <style>
+      .h{font:700 32px Arial,sans-serif;fill:#f7fafc}.sub{font:16px Arial,sans-serif;fill:#b8c6d9}
+      .nodeTitle{font:700 21px Arial,sans-serif;fill:#f7fafc}.nodeText{font:15px Arial,sans-serif;fill:#cbd5e1}
+      .tag{font:700 13px Arial,sans-serif;fill:#fda4af;letter-spacing:1.5px}
+    </style>
+  </defs>
+  <rect width="1200" height="620" rx="28" fill="url(#bg)"/>
+  <circle cx="1080" cy="80" r="130" fill="#293b52" opacity=".35"/><circle cx="110" cy="570" r="150" fill="#293b52" opacity=".25"/>
+  <text x="64" y="70" class="tag">BIKE SIMPLE. STATION SMART.</text>
+  <text x="64" y="116" class="h">CampusBike · Software Architecture</text>
+  <text x="64" y="148" class="sub">A mobile rental experience connected to campus fleet operations</text>
+  <rect x="65" y="215" width="300" height="125" rx="18" fill="#26384e" stroke="#4d6683" stroke-width="2"/>
+  <text x="95" y="258" class="nodeTitle">Student mobile app</text>
+  <text x="95" y="289" class="nodeText">Ride flow · QR scanning</text><text x="95" y="312" class="nodeText">History · Maintenance reports</text>
+  <rect x="65" y="390" width="300" height="125" rx="18" fill="#26384e" stroke="#4d6683" stroke-width="2"/>
+  <text x="95" y="433" class="nodeTitle">Admin dashboard</text>
+  <text x="95" y="464" class="nodeText">Fleet · Stations · Dock assignment</text><text x="95" y="487" class="nodeText">Accounts · Ride exports</text>
+  <path d="M365 277 H450 V345 H495" fill="none" stroke="#91a4bd" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M365 452 H450 V385 H495" fill="none" stroke="#91a4bd" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="505" y="285" width="265" height="150" rx="20" fill="url(#red)" stroke="#ffaaa9" stroke-width="2"/>
+  <text x="545" y="331" class="nodeTitle">Flask backend</text>
+  <text x="545" y="362" class="nodeText" fill="#fff">API · Authentication</text><text x="545" y="386" class="nodeText" fill="#fff">Ride and station rules</text><text x="545" y="410" class="nodeText" fill="#fff">Validation · Data access</text>
+  <path d="M770 360 H850" fill="none" stroke="#91a4bd" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="865" y="285" width="270" height="150" rx="20" fill="#26384e" stroke="#4d6683" stroke-width="2"/>
+  <ellipse cx="1000" cy="315" rx="45" ry="13" fill="#53718f" stroke="#a9bdd2" stroke-width="2"/>
+  <path d="M955 315 V380 C955 397 1045 397 1045 380 V315" fill="#344c67" stroke="#a9bdd2" stroke-width="2"/>
+  <ellipse cx="1000" cy="380" rx="45" ry="13" fill="#344c67" stroke="#a9bdd2" stroke-width="2"/>
+  <text x="1000" y="420" class="nodeTitle" text-anchor="middle">SQLite database</text>
+  <text x="600" y="555" class="sub" text-anchor="middle">Software MVP · Physical lock sensors and automatic docking detection are not implemented</text>
+</svg>
