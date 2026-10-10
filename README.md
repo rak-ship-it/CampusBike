@@ -31,6 +31,8 @@ and automatic dock detection are not implemented in this MVP.*
 - [Operator guide and backup/restore](docs/OPERATIONS.md)
 - [Architecture, features and handover](docs/HANDOVER.md)
 - [Release verification and remaining limitations](docs/RELEASE.md)
+- [Project roadmap](docs/ROADMAP.md)
+- [Contributing guide](CONTRIBUTING.md)
 - [System architecture diagram source](docs/architecture.svg)
 
 ## Included
