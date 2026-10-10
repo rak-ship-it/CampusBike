@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a problem you can reproduce in CampusBike
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove passwords, access tokens, personal information, and private URLs before posting.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Explain the issue in simple steps.
+      placeholder: I opened the student app and...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: List the steps another person can follow.
+      placeholder: |
+        1. Open...
+        2. Tap...
+        3. See the error...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and error message
+      description: Include OS/device, runtime, and relevant error text. Remove secrets.
+    validations:
+      required: false
